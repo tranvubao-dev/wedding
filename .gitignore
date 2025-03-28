@@ -1,0 +1,46 @@
+# Flutter/Dart/Pub related
+.dart_tool/
+.packages
+.pub/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+.flutter-version
+.melos_tool
+.idea/
+.vscode/
+android/app/key.properties
+android/local.properties
+
+# Generated files
+**/*.iml
+*.hive
+*.lock
+*.log
+*.migrate
+
+# macOS
+ios/Pods
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/Flutter/ephemeral
+ios/Runner.xcworkspace
+
+# Windows
+windows/flutter/generated_plugin_registrant.cc
+
+# Linux
+linux/flutter/generated_plugin_registrant.cc
+
+# Web
+web/generated_plugin_registrant.dart
+
+# Firebase
+firebase_app_id_file.json
+
+# Obfuscation
+*.dill
+*.so
+
+# Others
+*.DS_Store
