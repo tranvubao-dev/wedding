@@ -1,0 +1,72 @@
+{
+  "tasks_part2": [
+    {
+      "task_id": "T002",
+      "title": "Unit tests for core components",
+      "language": "typescript",
+      "complexity": "M",
+      "description": "Add vitest tests for Toast, NavigationDrawer, and data utilities",
+      "files": [
+        {"path": "src/components/Toast.test.tsx", "action": "create"},
+        {"path": "src/components/NavigationDrawer.test.tsx", "action": "create"},
+        {"path": "src/data.test.ts", "action": "create"}
+      ],
+      "test_files_owned_by": "tester",
+      "depends_on": ["T001"],
+      "parallelizable_with": [],
+      "inputs": "T001 testing infrastructure",
+      "outputs": "Unit tests for core components",
+      "edge_cases": ["mock localStorage", "animation timing"],
+      "acceptance_criteria": [
+        "AC1: Toast renders with message",
+        "AC2: Toast auto-closes after 3s",
+        "AC3: NavigationDrawer opens/closes",
+        "AC4: INITIAL_GUESTS has expected structure"
+      ],
+      "test_plan": {
+        "unit": ["vitest run src/**/*.test.{ts,tsx}"],
+        "integration": [],
+        "e2e_journeys": [],
+        "commands": ["npm run test"]
+      },
+      "negative_controls_expected": 2,
+      "definition_of_done": ["formatted", "lint clean", "verify exits 0", "coverage > 70%"]
+    },
+    {
+      "task_id": "T003",
+      "title": "E2E tests for user journeys",
+      "language": "typescript",
+      "complexity": "L",
+      "description": "Add Playwright E2E tests for RSVP flow and guest admin",
+      "files": [
+        {"path": "e2e/rsvp-flow.spec.ts", "action": "create"},
+        {"path": "e2e/guest-admin.spec.ts", "action": "create"},
+        {"path": "e2e/theme-customization.spec.ts", "action": "create"}
+      ],
+      "test_files_owned_by": "tester",
+      "depends_on": ["T001"],
+      "parallelizable_with": ["T002"],
+      "inputs": "T001 testing infrastructure, dev server",
+      "outputs": "E2E test suite",
+      "edge_cases": ["localStorage persistence", "URL param parsing", "theme persistence"],
+      "acceptance_criteria": [
+        "AC1: E2E test for RSVP submission passes",
+        "AC2: E2E test for adding guest passes",
+        "AC3: E2E test for theme change persists",
+        "AC4: All E2E tests pass on clean install"
+      ],
+      "test_plan": {
+        "unit": [],
+        "integration": [],
+        "e2e_journeys": [
+          "Journey: User opens invitation link -> fills RSVP -> sees confirmation -> data persists",
+          "Journey: Admin logs in -> adds guest -> sees guest in list -> copy link works",
+          "Journey: User changes theme -> refreshes -> theme persists"
+        ],
+        "commands": ["npx playwright test"]
+      },
+      "negative_controls_expected": 3,
+      "definition_of_done": ["formatted", "lint clean", "verify exits 0", "all E2E pass"]
+    }
+  ]
+}

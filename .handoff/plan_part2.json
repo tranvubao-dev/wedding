@@ -1,0 +1,36 @@
+{
+  "tasks": [
+    {
+      "task_id": "T001",
+      "title": "Project scaffold + verify script",
+      "language": "typescript",
+      "complexity": "M",
+      "description": "Setup vitest, playwright, and create scripts/verify.sh",
+      "files": [
+        {"path": "vitest.config.ts", "action": "create"},
+        {"path": "playwright.config.ts", "action": "create"},
+        {"path": "scripts/verify.sh", "action": "create"},
+        {"path": "package.json", "action": "modify"}
+      ],
+      "test_files_owned_by": "tester",
+      "depends_on": [],
+      "parallelizable_with": [],
+      "inputs": "Existing project structure",
+      "outputs": "Testing infrastructure, verify script",
+      "edge_cases": ["npm ci fails", "playwright install fails", "verify script permissions"],
+      "acceptance_criteria": [
+        "AC1: npm run test exits 0 with no tests",
+        "AC2: npx playwright test --list succeeds",
+        "AC3: bash scripts/verify.sh exits 0"
+      ],
+      "test_plan": {
+        "unit": [],
+        "integration": [],
+        "e2e_journeys": [],
+        "commands": ["npm run test", "npx playwright test --list", "bash scripts/verify.sh"]
+      },
+      "negative_controls_expected": 1,
+      "definition_of_done": ["formatted", "lint clean", "verify exits 0", "no secrets"]
+    }
+  ]
+}

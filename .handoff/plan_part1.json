@@ -1,0 +1,81 @@
+{
+  "status": "OK",
+  "plan_version": 1,
+  "project_name": "Wedding Digital Invitation",
+  "human_summary": "Kế hoạch hoàn thiện thiệp cưới kỹ thuật số React với tests, E2E và verification script.",
+  "requirements": {
+    "functional": [
+      "FR1: Hiển thị thiệp cưới với thông tin cặp đôi",
+      "FR2: Hiển thị chi tiết sự kiện",
+      "FR3: Khách mời xác nhận RSVP",
+      "FR4: Admin quản lý danh sách khách",
+      "FR5: Tạo link mời cá nhân hóa",
+      "FR6: Tùy chỉnh theme màu sắc"
+    ],
+    "non_functional": [
+      "NFR1: Responsive mobile-first design",
+      "NFR2: Performance: LCP < 2.5s",
+      "NFR3: Accessibility: WCAG 2.1 AA",
+      "NFR4: Data persistence via localStorage"
+    ],
+    "constraints": [
+      "C1: Frontend-only (no backend server)",
+      "C2: Vite + React 19 + TypeScript",
+      "C3: Tailwind CSS v4 for styling"
+    ]
+  },
+  "assumptions": [
+    "localStorage đủ cho use case thiệp cưới nhỏ",
+    "Không cần authentication phức tạp",
+    "Deploy static trên Vercel/Netlify/AI Studio"
+  ],
+  "open_questions": [
+    "Có cần backend cho RSVP collection không?",
+    "Giới hạn số lượng khách mời tối đa?"
+  ],
+  "tech_stack": [
+    {"component": "frontend", "language": "typescript", "framework": "React 19 + Vite", "reason": "Existing stack, modern DX", "package_manager": "npm", "test_framework": "vitest"},
+    {"component": "e2e", "language": "typescript", "framework": "Playwright", "reason": "Industry standard for E2E", "package_manager": "npm", "test_framework": "@playwright/test"}
+  ],
+  "architecture": {
+    "style": "spa",
+    "components": [
+      {"name": "App", "language": "typescript", "responsibility": "Main container, state management", "depends_on": []},
+      {"name": "InvitationView", "language": "typescript", "responsibility": "Display wedding invitation", "depends_on": []},
+      {"name": "EventDetailsView", "language": "typescript", "responsibility": "Show ceremony/reception details", "depends_on": []},
+      {"name": "RsvpView", "language": "typescript", "responsibility": "RSVP form handling", "depends_on": []},
+      {"name": "GuestAdminView", "language": "typescript", "responsibility": "Admin panel for guest management", "depends_on": []},
+      {"name": "NavigationDrawer", "language": "typescript", "responsibility": "Side navigation menu", "depends_on": []},
+      {"name": "Toast", "language": "typescript", "responsibility": "Notification component", "depends_on": []}
+    ],
+    "contracts": [],
+    "data_model": "localStorage: eternal_wedding_guests -> Guest[]",
+    "diagram_mermaid": "graph TD; A[App] --> B[InvitationView]; A --> C[EventDetailsView]; A --> D[RsvpView]; A --> E[GuestAdminView];"
+  },
+  "runtime": {
+    "services": [],
+    "verify_command": "bash scripts/verify.sh"
+  },
+  "repo_tree": [
+    "index.html",
+    "package.json",
+    "vite.config.ts",
+    "tsconfig.json",
+    "src/main.tsx",
+    "src/App.tsx",
+    "src/config.ts",
+    "src/images.config.ts",
+    "src/data.ts",
+    "src/types.ts",
+    "src/index.css",
+    "src/components/InvitationView.tsx",
+    "src/components/EventDetailsView.tsx",
+    "src/components/RsvpView.tsx",
+    "src/components/GuestAdminView.tsx",
+    "src/components/NavigationDrawer.tsx",
+    "src/components/Toast.tsx",
+    "README.md",
+    ".env.example",
+    ".gitignore"
+  ]
+}
