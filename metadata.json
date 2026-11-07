@@ -1,0 +1,6 @@
+{
+  "name": "Wedding",
+  "description": "Một ứng dụng thiệp cưới trực tuyến sang trọng và tinh tế với các tính năng: Thiệp mời cá nhân hóa, Thông tin chi tiết sự kiện, Đăng ký tham dự (RSVP) và Quản trị danh sách khách mời.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
