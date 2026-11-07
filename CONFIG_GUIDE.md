@@ -7,12 +7,10 @@ Chỉnh sửa `src/config.ts` để thay đổi tên cặp đôi, màu sắc và
 
 Danh sách nhóm khách chỉ gồm `NHÀ TRAI` và `NHÀ GÁI`. Chỉnh giờ đón khách, hôn lễ và đãi tiệc riêng cho mỗi bên trong `WEDDING_CONFIG.guestSchedules.groom` và `WEDDING_CONFIG.guestSchedules.bride`.
 
-### 2. Hình ảnh: `src/images.config.ts`
-Chỉnh sửa file này để thay đổi tất cả URL hình ảnh:
-- Ảnh cặp đôi (couple.main, couple.portrait1, etc.)
-- Ảnh sự kiện (event.ceremony, event.reception)
-- Ảnh trang trí (decor.floral1, etc.)
-- Ảnh RSVP (rsvp.image1, image2)
+### 2. Hình ảnh
+Ảnh album nằm trong `WEDDING_CONFIG.content.albumImages` ở `src/config.ts`.
+Ảnh bản đồ nằm trong `WEDDING_CONFIG.guestSchedules` (`receptionImagemap`).
+Ảnh bìa và ảnh trang trí được đặt trực tiếp tại thuộc tính `src` trong `src/components/InvitationView.tsx` và `src/components/EventDetailsView.tsx`.
 
 ## 🔧 Cách Sử Dụng
 
@@ -53,21 +51,12 @@ Chỉnh các giá trị này trực tiếp; không cần sửa component. Các t
 | `program` | Các phần và mốc chương trình theo ngày | `day1`, `day2`, `reception` |
 | `content.albumImages` | Chú thích ảnh album | Mảng ảnh |
 
-### Trong `src/images.config.ts`:
-| Trường | Ý nghĩa |
-|--------|---------|
-| `couple.main` | Ảnh chính cặp đôi |
-| `event.ceremony` | Ảnh lễ thành hôn |
-| `event.reception` | Ảnh tiệc cưới |
-| `rsvp.image1` | Ảnh minh họa RSVP 1 |
-| `rsvp.image2` | Ảnh minh họa RSVP 2 |
-
 ## ✅ Checklist
 - [ ] Sửa tên cặp đôi trong `config.ts`
 - [ ] Sửa ngày tháng trong `config.ts`
 - [ ] Sửa địa điểm trong `config.ts`
 - [ ] Đổi màu sắc nếu muốn trong `config.ts`
-- [ ] Thay URL ảnh trong `images.config.ts`
+- [ ] Thay URL ảnh trong config và các component tương ứng
 - [ ] Test lại trang sau khi sửa
 
 ## 💡 Mẹo

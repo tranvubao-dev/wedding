@@ -9,15 +9,33 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Guest } from './types';
 import { INITIAL_GUESTS } from './data';
 import { WEDDING_CONFIG } from './config';
-import { WEDDING_IMAGES } from './images.config';
 import NavigationDrawer from './components/NavigationDrawer';
 import InvitationView from './components/InvitationView';
 import EventDetailsView from './components/EventDetailsView';
 import RsvpView from './components/RsvpView';
 import GuestAdminView from './components/GuestAdminView';
 import Toast from './components/Toast';
+import { localStore, sessionStore } from './storage';
+
+const readThemeColor = (key: string, fallback: string) => {
+  const value = localStore.getItem(key);
+  return value && /^#[0-9a-f]{6}$/i.test(value) ? value : fallback;
+};
 
 type ActiveTab = 'INVITATION' | 'DETAILS' | 'RSVP' | 'ADMIN';
+
+const isGuest = (value: unknown): value is Guest => {
+  if (!value || typeof value !== 'object') return false;
+  const guest = value as Guest;
+  return typeof guest.id === 'string' && typeof guest.name === 'string'
+    && typeof guest.group === 'string'
+    && ['SENT', 'DRAFT', 'CONFIRMED', 'DECLINED'].includes(guest.status)
+    && ['ATTENDING', 'DECLINED', 'PENDING'].includes(guest.rsvpStatus)
+    && ['BRIDE', 'GROOM', 'NONE'].includes(guest.relation)
+    && Number.isInteger(guest.guestsCount) && guest.guestsCount >= 0
+    && (guest.blessing === undefined || typeof guest.blessing === 'string')
+    && (guest.updatedAt === undefined || typeof guest.updatedAt === 'string');
+};
 
 const normalizeGuestGroup = (group: string, relation: Guest['relation'] = 'NONE') => {
   const groupCopy = WEDDING_CONFIG.copy.adminView;
@@ -54,17 +72,17 @@ export default function App() {
 
   // Dynamic App Theme States
   const [themeTone, setThemeTone] = useState(() => {
-    return localStorage.getItem('wedding_theme_tone') || WEDDING_CONFIG.colors.primary;
+    return readThemeColor('wedding_theme_tone', WEDDING_CONFIG.colors.primary);
   });
   const [themeAccent, setThemeAccent] = useState(() => {
-    return localStorage.getItem('wedding_theme_accent') || WEDDING_CONFIG.colors.accent;
+    return readThemeColor('wedding_theme_accent', WEDDING_CONFIG.colors.accent);
   });
 
   const handleThemeChange = (tone: string, accent: string) => {
     setThemeTone(tone);
     setThemeAccent(accent);
-    localStorage.setItem('wedding_theme_tone', tone);
-    localStorage.setItem('wedding_theme_accent', accent);
+    localStore.setItem('wedding_theme_tone', tone);
+    localStore.setItem('wedding_theme_accent', accent);
   };
 
   // Background Music States
@@ -75,7 +93,7 @@ export default function App() {
   // Background Music Management Effect
   useEffect(() => {
     if (!audioRef.current) {
-      audioRef.current = new Audio('https://res.cloudinary.com/dp2vpbmjg/video/upload//fl_attachment:wedding_murjqb//v1781189747/wedding_murjqb.mp3?_s=public-apps');
+      audioRef.current = new Audio('https://res.cloudinary.com/dp2vpbmjg/video/upload/v1781189747/wedding_murjqb.mp3');
       audioRef.current.loop = true;
       audioRef.current.volume = 0.5;
     }
@@ -149,12 +167,12 @@ export default function App() {
   // Initialize guest list and check URL search parameters
   useEffect(() => {
     // 1. Local Storage initialization
-    const storedGuests = localStorage.getItem('eternal_wedding_guests');
+    const storedGuests = localStore.getItem('eternal_wedding_guests');
     let loadedGuests: Guest[] = INITIAL_GUESTS;
     if (storedGuests) {
       try {
         const parsedGuests: unknown = JSON.parse(storedGuests);
-        if (Array.isArray(parsedGuests)) {
+        if (Array.isArray(parsedGuests) && parsedGuests.every(isGuest)) {
           loadedGuests = parsedGuests;
         }
       } catch (e) {
@@ -166,7 +184,7 @@ export default function App() {
       group: normalizeGuestGroup(guest.group || '', guest.relation),
     }));
     setGuests(normalizedGuests);
-    localStorage.setItem('eternal_wedding_guests', JSON.stringify(normalizedGuests));
+    localStore.setItem('eternal_wedding_guests', JSON.stringify(normalizedGuests));
 
     // 2. URL Params parsing
     const urlParams = new URLSearchParams(window.location.search);
@@ -181,7 +199,7 @@ export default function App() {
     }
 
     // Restore admin access only from the current tab's authenticated session.
-    const isStoredAdmin = sessionStorage.getItem('eternal_wedding_admin') === 'true';
+    const isStoredAdmin = sessionStore.getItem('eternal_wedding_admin') === 'true';
     if (isStoredAdmin) {
       setIsAdmin(true);
     }
@@ -189,7 +207,7 @@ export default function App() {
 
   const saveGuestsToStorage = (updatedGuests: Guest[]) => {
     setGuests(updatedGuests);
-    localStorage.setItem('eternal_wedding_guests', JSON.stringify(updatedGuests));
+    localStore.setItem('eternal_wedding_guests', JSON.stringify(updatedGuests));
   };
 
   const triggerToast = (msg: string) => {
@@ -336,7 +354,7 @@ export default function App() {
     // Valid admin test PINs: 2512 (wedding date 25/12), 1204, or 1234
     if ((copy.adminLogin.allowedPins as readonly string[]).includes(cleanPIN)) {
       setIsAdmin(true);
-      sessionStorage.setItem('eternal_wedding_admin', 'true');
+      sessionStore.setItem('eternal_wedding_admin', 'true');
       setShowPasscodeModal(false);
       setPasscodeInput('');
       setPasscodeError('');
@@ -360,71 +378,71 @@ export default function App() {
         }
         
         /* Overrides for hardcoded arbitrary classes referencing old colors */
-        .bg-\[\#775a19\] {
+        .bg-\\[\\#775a19\\] {
           background-color: ${themeTone};
         }
-        .text-\[\#775a19\] {
+        .text-\\[\\#775a19\\] {
           color: ${themeTone};
         }
-        .border-\[\#775a19\] {
+        .border-\\[\\#775a19\\] {
           border-color: ${themeTone};
         }
-        .hover\:bg-\[\#775a19\]:hover {
+        .hover\\:bg-\\[\\#775a19\\]:hover {
           background-color: ${themeTone};
         }
-        .hover\:text-\[\#775a19\]:hover {
+        .hover\\:text-\\[\\#775a19\\]:hover {
           color: ${themeTone};
         }
-        .hover\:border-\[\#775a19\]:hover {
+        .hover\\:border-\\[\\#775a19\\]:hover {
           border-color: ${themeTone};
         }
-        .focus-within\:border-\[\#775a19\]:focus-within {
+        .focus-within\\:border-\\[\\#775a19\\]:focus-within {
           border-color: ${themeTone};
         }
-        .active\:border-\[\#775a19\]:active {
+        .active\\:border-\\[\\#775a19\\]:active {
           border-color: ${themeTone};
         }
-        .focus\:border-\[\#775a19\]:focus {
+        .focus\\:border-\\[\\#775a19\\]:focus {
           border-color: ${themeTone};
         }
-        .bg-\[\#775a19\]\/10 {
+        .bg-\\[\\#775a19\\]\\/10 {
           background-color: ${themeTone}1a;
         }
-        .bg-\[\#775a19\]\/5 {
+        .bg-\\[\\#775a19\\]\\/5 {
           background-color: ${themeTone}0d;
         }
-        .bg-\[\#775a19\]\/12 {
+        .bg-\\[\\#775a19\\]\\/12 {
           background-color: ${themeTone}1f;
         }
-        .hover\:bg-\[\#775a19\]\/10:hover {
+        .hover\\:bg-\\[\\#775a19\\]\\/10:hover {
           background-color: ${themeTone}1a;
         }
-        .hover\:bg-\[\#775a19\]\/12:hover {
+        .hover\\:bg-\\[\\#775a19\\]\\/12:hover {
           background-color: ${themeTone}1f;
         }
 
-        .bg-\[\#c5a059\] {
+        .bg-\\[\\#c5a059\\] {
           background-color: ${themeAccent};
         }
-        .text-\[\#c5a059\] {
+        .text-\\[\\#c5a059\\] {
           color: ${themeAccent};
         }
-        .border-\[\#c5a059\] {
+        .border-\\[\\#c5a059\\] {
           border-color: ${themeAccent};
         }
-        .hover\:bg-\[\#c5a059\]:hover {
+        .hover\\:bg-\\[\\#c5a059\\]:hover {
           background-color: ${themeAccent};
         }
-        .text-\[\#c5a059\]\/10 {
+        .text-\\[\\#c5a059\\]\\/10 {
           color: ${themeAccent}1a;
         }
-        .bg-\[\#e6e3d4\] {
+        .bg-\\[\\#e6e3d4\\] {
           background-color: ${themeTone}13;
         }
-        .border-\[\#e3d1b4\] {
+        .border-\\[\\#e3d1b4\\] {
           border-color: ${themeTone}3b;
         }
-        .border-\[\#d1c5b4\] {
+        .border-\\[\\#d1c5b4\\] {
           border-color: ${themeTone}4d;
         }
         
@@ -526,7 +544,7 @@ export default function App() {
                 <button
                   onClick={() => {
                     setIsAdmin(false);
-                    sessionStorage.removeItem('eternal_wedding_admin');
+                    sessionStore.removeItem('eternal_wedding_admin');
                     setActiveTab('INVITATION');
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                     triggerToast(copy.adminLogin.logout);

@@ -89,11 +89,13 @@ export default function GuestAdminView({
 
   // Handle invitation link copying
   const handleCopyLink = (guest: Guest) => {
-    const encodedName = encodeURIComponent(guest.name);
-    const encodedGroup = encodeURIComponent(guest.group || '');
-    const personalUrl = `${window.location.origin}/?to=${encodedName}${guest.group ? `&group=${encodedGroup}` : ''}`;
+    const personalUrl = new URL(window.location.href);
+    personalUrl.search = '';
+    personalUrl.hash = '';
+    personalUrl.searchParams.set('to', guest.name);
+    if (guest.group) personalUrl.searchParams.set('group', guest.group);
 
-    navigator.clipboard.writeText(personalUrl)
+    navigator.clipboard.writeText(personalUrl.toString())
       .then(() => {
         onTriggerCopyToast(guest.name);
       })

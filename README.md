@@ -1,20 +1,34 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# Thiệp cưới
 
-# Run and deploy your AI Studio app
+Ứng dụng React + TypeScript + Vite, triển khai tĩnh lên GitHub Pages.
 
-This contains everything you need to run your app locally.
+## Chạy tại máy
 
-View your app in AI Studio: https://ai.studio/apps/1de15678-65ce-4059-8760-4652759edd81
+Yêu cầu Node.js 22 và npm.
 
-## Run Locally
+```sh
+npm ci
+npm run dev
+```
 
-**Prerequisites:**  Node.js
+## Kiểm tra và build
 
+```sh
+npm run lint
+npm run build
+npm run preview
+```
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+`build` kiểm tra TypeScript trước khi xuất website vào `dist/`. Ứng dụng hiện không sử dụng Gemini API và không cần `.env`.
+
+## Triển khai
+
+Xem [hướng dẫn GitHub Pages](GITHUB_PAGES_DEPLOY.md). Workflow `.github/workflows/deploy.yml` tự build và deploy khi push lên `main`.
+
+Xem [hướng dẫn chỉnh sửa](CONFIG_GUIDE.md) để thay thông tin thiệp.
+
+## Dữ liệu hiện tại
+
+Khách mời, RSVP, lời chúc, lượt thích và màu tùy chỉnh chỉ lưu trong trình duyệt hiện tại (localStorage), không đồng bộ giữa thiết bị. Khi trình duyệt chặn lưu trữ, dữ liệu chỉ còn trong bộ nhớ trong phiên sử dụng. Muốn nhận phản hồi từ khách trên các thiết bị khác cần tích hợp backend hoặc dịch vụ biểu mẫu.
+
+Mã PIN admin được kiểm tra ở phía trình duyệt và có trong source; đây chỉ là khóa giao diện, không phải cơ chế bảo vệ dữ liệu bí mật.

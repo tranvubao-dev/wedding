@@ -7,7 +7,6 @@ import React, { useState, useEffect } from 'react';
 import { Users, Heart, Sparkles, MessageSquare } from 'lucide-react';
 import { Guest } from '../types';
 import { WEDDING_CONFIG } from '../config';
-// import { WEDDING_IMAGES } from '../images.config';
 
 interface RsvpViewProps {
   currentGuestName: string;
@@ -24,7 +23,7 @@ export default function RsvpView({ currentGuestName, onRsvpComplete }: RsvpViewP
   const [showConfirmation, setShowConfirmation] = useState(false);
 
   useEffect(() => {
-    if (currentGuestName && currentGuestName !== '') {
+    if (currentGuestName && currentGuestName !== WEDDING_CONFIG.copy.common.guest) {
       setFullName(currentGuestName);
     }
   }, [currentGuestName]);
@@ -41,7 +40,7 @@ export default function RsvpView({ currentGuestName, onRsvpComplete }: RsvpViewP
     if (!isAttending) parsedCount = 0;
 
     onRsvpComplete({
-      name: fullName,
+      name: fullName.trim(),
       guestsCount: parsedCount,
       relation,
       blessing,
@@ -53,7 +52,7 @@ export default function RsvpView({ currentGuestName, onRsvpComplete }: RsvpViewP
     setTimeout(() => {
       setShowConfirmation(false);
       // Reset form if not logged guest
-      if (currentGuestName === '') {
+      if (!currentGuestName || currentGuestName === WEDDING_CONFIG.copy.common.guest) {
         setFullName('');
         setBlessing('');
         setIsAttending(null);

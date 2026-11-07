@@ -11,3 +11,9 @@ The root `index.html` intentionally references `/src/main.tsx` for Vite source b
 `vite.config.ts` uses `base: './'` for assets on both `bidtech.id.vn` and `tranvubao-dev.github.io/wedding/`.
 
 Do not commit `node_modules`, `dist`, `.env` or secrets.
+
+The custom domain is copied from `public/CNAME` into `dist/CNAME`. If changing domains, update both `CNAME` and `public/CNAME`; to use only the default GitHub Pages URL, remove both CNAME files and clear the custom domain in repository settings.
+
+Before pushing, run `npm ci` and `npm run build`. The build includes TypeScript checks. Invitation links retain the current pathname, including `/wedding/`.
+
+RSVP and wishes currently use browser-local storage only; GitHub Pages does not provide a backend to collect responses across devices.

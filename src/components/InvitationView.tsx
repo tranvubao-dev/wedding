@@ -23,7 +23,7 @@ import {
 import { ALBUM_IMAGES } from '../data';
 import { Guest } from '../types';
 import { WEDDING_CONFIG } from '../config';
-// import { WEDDING_IMAGES } from '../images.config';
+import { localStore } from '../storage';
 
 interface InvitationViewProps {
   guestName: string;
@@ -77,13 +77,12 @@ export default function InvitationView({
   useEffect(() => {
     const targetDate = new Date(schedule.countdownTarget).getTime();
 
-    const interval = setInterval(() => {
+    const updateCountdown = () => {
       const now = new Date().getTime();
       const difference = targetDate - now;
 
       if (difference <= 0) {
-        clearInterval(interval);
-        setTimeLeft(prev => ({ ...prev, isCompleted: true }));
+        setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0, isCompleted: true });
       } else {
         const days = Math.floor(difference / (1000 * 60 * 60 * 24));
         const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
@@ -98,7 +97,9 @@ export default function InvitationView({
           isCompleted: false
         });
       }
-    }, 1000);
+    };
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 1000);
 
     return () => clearInterval(interval);
   }, [schedule.countdownTarget]);
@@ -113,18 +114,26 @@ export default function InvitationView({
 
   // Blessing Likes tracker load/save
   useEffect(() => {
-    const storedLikes = localStorage.getItem('eternal_wedding_blessing_likes');
-    const storedUserLikes = localStorage.getItem('eternal_wedding_user_likes');
+    const storedLikes = localStore.getItem('eternal_wedding_blessing_likes');
+    const storedUserLikes = localStore.getItem('eternal_wedding_user_likes');
     if (storedLikes) {
       try {
-        setBlessingLikes(JSON.parse(storedLikes));
+        const parsed: unknown = JSON.parse(storedLikes);
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+          && Object.values(parsed).every(value => typeof value === 'number' && Number.isFinite(value) && value >= 0)) {
+          setBlessingLikes(parsed as Record<string, number>);
+        }
       } catch (e) {
         console.error(e);
       }
     }
     if (storedUserLikes) {
       try {
-        setUserLiked(JSON.parse(storedUserLikes));
+        const parsed: unknown = JSON.parse(storedUserLikes);
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+          && Object.values(parsed).every(value => typeof value === 'boolean')) {
+          setUserLiked(parsed as Record<string, boolean>);
+        }
       } catch (e) {
         console.error(e);
       }
@@ -147,8 +156,8 @@ export default function InvitationView({
 
     setBlessingLikes(newLikes);
     setUserLiked(newUserLiked);
-    localStorage.setItem('eternal_wedding_blessing_likes', JSON.stringify(newLikes));
-    localStorage.setItem('eternal_wedding_user_likes', JSON.stringify(newUserLiked));
+    localStore.setItem('eternal_wedding_blessing_likes', JSON.stringify(newLikes));
+    localStore.setItem('eternal_wedding_user_likes', JSON.stringify(newUserLiked));
   };
 
   const handleQuickRsvpSubmit = (e: React.FormEvent) => {
@@ -156,7 +165,7 @@ export default function InvitationView({
     if (!rsvpName.trim()) return;
     if (isAttending === null) return;
 
-    onRsvpSubmit(rsvpName, isAttending, isAttending ? guestsCount : 0);
+    onRsvpSubmit(rsvpName.trim(), isAttending, isAttending ? guestsCount : 0);
     setSubmitSuccess(true);
     setTimeout(() => {
       setSubmitSuccess(false);
@@ -168,7 +177,7 @@ export default function InvitationView({
     if (!blessingName.trim() || !blessingMessage.trim()) return;
 
     if (onAddQuickBlessing) {
-      onAddQuickBlessing(blessingName, blessingMessage);
+      onAddQuickBlessing(blessingName.trim(), blessingMessage.trim());
     }
     setBlessingMessage('');
   };
