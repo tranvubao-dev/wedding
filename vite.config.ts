@@ -6,6 +6,8 @@ import {defineConfig} from 'vite';
 export default defineConfig(() => {
   return {
     plugins: [react(), tailwindcss()],
+    // Relative assets work on both custom root domains and /wedding/ paths.
+    base: './',
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
