@@ -28,10 +28,10 @@ import { localStore } from '../storage';
 interface InvitationViewProps {
   guestName: string;
   guestGroup: string;
-  onRsvpSubmit: (name: string, attending: boolean, guestsCount: number) => void;
+  onRsvpSubmit: (name: string, attending: boolean, guestsCount: number) => Promise<void>;
   onNavigateToDetails: () => void;
   guests: Guest[];
-  onAddQuickBlessing?: (name: string, blessing: string) => void;
+  onAddQuickBlessing?: (name: string, blessing: string) => Promise<void>;
 }
 
 export default function InvitationView({
@@ -42,6 +42,11 @@ export default function InvitationView({
   guests,
   onAddQuickBlessing
 }: InvitationViewProps) {
+  const [sendingRsvp, setSendingRsvp] = useState(false);
+  const [sendingWish, setSendingWish] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  const rsvpLock = useRef(false);
+  const wishLock = useRef(false);
   const copy = WEDDING_CONFIG.copy.invitationView;
   const [groomGroup, brideGroup] = WEDDING_CONFIG.copy.adminView.groupOptions;
   const selectedGroup = guestGroup || groomGroup;
@@ -160,26 +165,34 @@ export default function InvitationView({
     localStore.setItem('eternal_wedding_user_likes', JSON.stringify(newUserLiked));
   };
 
-  const handleQuickRsvpSubmit = (e: React.FormEvent) => {
+  const handleQuickRsvpSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!rsvpName.trim()) return;
     if (isAttending === null) return;
 
-    onRsvpSubmit(rsvpName.trim(), isAttending, isAttending ? guestsCount : 0);
-    setSubmitSuccess(true);
-    setTimeout(() => {
-      setSubmitSuccess(false);
-    }, 5000);
+    if (rsvpLock.current) return;
+    rsvpLock.current = true; setSendingRsvp(true); setSubmitError('');
+    try {
+      await onRsvpSubmit(rsvpName.trim(), isAttending, isAttending ? guestsCount : 0);
+      setSubmitSuccess(true);
+      setTimeout(() => setSubmitSuccess(false), 5000);
+    } catch { setSubmitError('Chưa gửi được phản hồi. Vui lòng kiểm tra kết nối và thử lại.'); }
+    finally { rsvpLock.current = false; setSendingRsvp(false); }
+
   };
 
-  const handleSendBlessingSubmit = (e: React.FormEvent) => {
+  const handleSendBlessingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!blessingName.trim() || !blessingMessage.trim()) return;
 
-    if (onAddQuickBlessing) {
-      onAddQuickBlessing(blessingName.trim(), blessingMessage.trim());
-    }
-    setBlessingMessage('');
+    if (wishLock.current || !onAddQuickBlessing) return;
+    wishLock.current = true; setSendingWish(true); setSubmitError('');
+    try {
+      await onAddQuickBlessing(blessingName.trim(), blessingMessage.trim());
+      setBlessingMessage('');
+    } catch { setSubmitError('Chưa gửi được lời chúc. Vui lòng kiểm tra kết nối và thử lại.'); }
+    finally { wishLock.current = false; setSendingWish(false); }
+
   };
 
   // Filter out any guests who have left actual blessings to feature on the wall
@@ -581,7 +594,7 @@ export default function InvitationView({
           <div className="lg:col-span-5 bg-[#faf9f8] p-8 border border-[#d1c5b4] rounded shadow-md text-left">
             <h4 className="font-serif text-xl font-bold text-on-surface mb-2">{copy.wishFormTitle}</h4>
             <p className="font-sans text-xs text-[#605f53] mb-6 leading-relaxed">
-              {copy.wishFormDescription}
+              {copy.wishFormDescription} Tên và lời chúc bạn gửi sẽ hiển thị công khai.
             </p>
 
             <form onSubmit={handleSendBlessingSubmit} className="space-y-4">
@@ -593,6 +606,7 @@ export default function InvitationView({
                   type="text"
                   required
                   placeholder={copy.namePlaceholder}
+                  maxLength={150}
                   value={blessingName}
                   onChange={(e) => setBlessingName(e.target.value)}
                   className="w-full bg-white border border-[#e3e2e1] active:border-[#775a19] focus:outline-none focus:border-[#775a19] transition-all py-2.5 px-3 rounded text-sm placeholder:text-neutral-300 text-on-surface"
@@ -607,18 +621,20 @@ export default function InvitationView({
                   required
                   rows={4}
                   placeholder={copy.wishPlaceholder}
+                  maxLength={2000}
                   value={blessingMessage}
                   onChange={(e) => setBlessingMessage(e.target.value)}
                   className="w-full bg-white border border-[#e3e2e1] active:border-[#775a19] focus:outline-none focus:border-[#775a19] transition-all py-2.5 px-3 rounded text-sm placeholder:text-neutral-300 text-on-surface resize-none leading-relaxed"
                 />
               </div>
 
+              {submitError && <p role="alert" className="text-red-700 mb-3">{submitError}</p>}
               <button
-                type="submit"
+                type="submit" disabled={sendingWish || sendingRsvp}
                 className="w-full bg-[#775a19] hover:bg-[#c5a059] active:scale-95 text-white font-sans font-bold text-xs py-3 rounded hover:shadow transition-all uppercase tracking-widest flex items-center justify-center gap-2"
               >
                 <Send size={12} />
-                {copy.sendWish}
+                {sendingWish ? 'Đang gửi…' : copy.sendWish}
               </button>
             </form>
           </div>
@@ -651,6 +667,7 @@ export default function InvitationView({
                   value={rsvpName}
                   onChange={(e) => setRsvpName(e.target.value)}
                   placeholder={copy.rsvpNamePlaceholder}
+                  maxLength={150}
                   required
                   className="w-full text-center bg-transparent border-none focus:outline-none focus:ring-0 text-lg font-sans placeholder-[#8c8273]/60 text-on-surface"
                 />
@@ -700,7 +717,7 @@ export default function InvitationView({
                     </span>
                     <button
                       type="button"
-                      onClick={() => setGuestsCount(guestsCount + 1)}
+                      onClick={() => setGuestsCount(Math.min(20, guestsCount + 1))}
                       className="w-8 h-8 rounded-full border border-[#7f7667] text-[#775a19] hover:bg-[#775a19] hover:text-white text-lg font-bold flex items-center justify-center"
                     >
                       +
@@ -709,15 +726,15 @@ export default function InvitationView({
                 </div>
               )}
 
+              {submitError && <p role="alert" className="text-red-700 mb-3">{submitError}</p>}
               <button
-                type="submit"
-                disabled={isAttending === null}
+                type="submit" disabled={sendingWish || sendingRsvp || isAttending === null}
                 className={`w-full font-sans font-bold text-xs py-4 uppercase tracking-widest rounded-sm transition-all shadow-md ${isAttending !== null
                   ? 'bg-[#775a19] text-white hover:bg-[#c5a059] cursor-pointer'
                   : 'bg-[#eeeeed] text-[#7f7667] cursor-not-allowed'
                   }`}
               >
-                {copy.sendRsvp}
+                {sendingRsvp ? 'Đang gửi…' : copy.sendRsvp}
               </button>
             </form>
           )}

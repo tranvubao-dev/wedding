@@ -22,7 +22,7 @@ import { WEDDING_CONFIG } from '../config';
 
 interface GuestAdminViewProps {
   guests: Guest[];
-  onAddGuest: (name: string, group: string) => void;
+  onAddGuest: (name: string, group: string) => Promise<void>;
   onDeleteGuest: (id: string) => void;
   onPreviewGuest: (guest: Guest) => void;
   onTriggerCopyToast: (guestName: string) => void;
@@ -41,6 +41,8 @@ export default function GuestAdminView({
   themeAccent,
   onChangeTheme,
 }: GuestAdminViewProps) {
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
   const copy = WEDDING_CONFIG.copy.adminView;
   const [newGuestName, setNewGuestName] = useState('');
   const [newGuestGroup, setNewGuestGroup] = useState('');
@@ -104,13 +106,18 @@ export default function GuestAdminView({
       });
   };
 
-  const handleCreateGuest = (e: React.FormEvent) => {
+  const handleCreateGuest = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newGuestName.trim()) return;
 
-    onAddGuest(newGuestName.trim(), newGuestGroup.trim() || WEDDING_CONFIG.copy.adminView.groupOptions[0]);
+    if (saving) return;
+    setSaving(true); setSaveError('');
+    try {
+    await onAddGuest(newGuestName.trim(), newGuestGroup.trim() || WEDDING_CONFIG.copy.adminView.groupOptions[0]);
     setNewGuestName('');
     setNewGuestGroup('');
+    } catch { setSaveError('Không tạo được khách mời. Vui lòng thử lại.'); }
+    finally { setSaving(false); }
   };
 
   // Extract unique groups for filters
@@ -154,7 +161,7 @@ export default function GuestAdminView({
               <div>
                 <h3 className="font-serif text-2xl text-[#775a19] mb-6 font-semibold flex items-center gap-2">
                   <PartyPopper size={20} />
-                  {copy.addTitle}
+                  {copy.addTitle}{saveError && <span role="alert" className="block text-sm text-red-700">{saveError}</span>}
                 </h3>
                 
                 <div className="space-y-6">
@@ -168,6 +175,7 @@ export default function GuestAdminView({
                       value={newGuestName}
                       onChange={(e) => setNewGuestName(e.target.value)}
                       placeholder={copy.namePlaceholder}
+                  maxLength={150}
                       className="w-full bg-transparent border-b border-[#e3e2e1] py-3 text-base text-on-surface placeholder-neutral-300 focus:outline-none focus:border-[#775a19] focus:ring-0 transition-all font-sans"
                     />
                   </div>
@@ -193,10 +201,10 @@ export default function GuestAdminView({
 
               <div className="mt-10">
                 <button
-                  type="submit"
+                  type="submit" disabled={saving}
                   className="w-full bg-[#775a19] hover:bg-[#c5a059] text-white py-4 px-6 font-sans font-bold text-xs tracking-widest hover:shadow-md transition-all flex items-center justify-center gap-2 group cursor-pointer rounded-sm"
                 >
-                  <span>{copy.create}</span>
+                  <span>{saving ? 'Đang lưu…' : copy.create}</span>
                   <Plus size={14} className="group-hover:translate-x-0.5 transition-transform" />
                 </button>
               </div>

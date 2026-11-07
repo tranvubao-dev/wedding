@@ -19,7 +19,7 @@ npm run build
 npm run preview
 ```
 
-`build` kiểm tra TypeScript trước khi xuất website vào `dist/`. Ứng dụng hiện không sử dụng Gemini API và không cần `.env`.
+`build` kiểm tra TypeScript trước khi xuất website vào `dist/`. Ứng dụng không sử dụng Gemini API; kết nối Supabase dùng `.env.local`.
 
 ## Triển khai
 
@@ -27,8 +27,10 @@ Xem [hướng dẫn GitHub Pages](GITHUB_PAGES_DEPLOY.md). Workflow `.github/wor
 
 Xem [hướng dẫn chỉnh sửa](CONFIG_GUIDE.md) để thay thông tin thiệp.
 
-## Dữ liệu hiện tại
+## Supabase
 
-Khách mời, RSVP, lời chúc, lượt thích và màu tùy chỉnh chỉ lưu trong trình duyệt hiện tại (localStorage), không đồng bộ giữa thiết bị. Khi trình duyệt chặn lưu trữ, dữ liệu chỉ còn trong bộ nhớ trong phiên sử dụng. Muốn nhận phản hồi từ khách trên các thiết bị khác cần tích hợp backend hoặc dịch vụ biểu mẫu.
+RSVP và lời chúc được lưu vào Supabase. Quản trị đăng nhập bằng email/mật khẩu qua Supabase Auth. Xem [hướng dẫn thiết lập](SUPABASE_SETUP.md) và chạy SQL trong `supabase/schema.sql` trước khi dùng.
 
-Mã PIN admin được kiểm tra ở phía trình duyệt và có trong source; đây chỉ là khóa giao diện, không phải cơ chế bảo vệ dữ liệu bí mật.
+Sao chép `.env.example` thành `.env.local`, điền Project URL và publishable key, rồi chạy lại dev server. GitHub Actions cần hai giá trị cấu hình như hướng dẫn; workflow sẽ dừng nếu thiếu cấu hình.
+
+Màu giao diện và lượt thích vẫn lưu cục bộ. Dữ liệu mẫu/cục bộ cũ không tự được tải lên database. Mỗi phản hồi là một bản ghi riêng, không ghi đè theo tên.

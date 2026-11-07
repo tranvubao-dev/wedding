@@ -3,17 +3,20 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Users, Heart, Sparkles, MessageSquare } from 'lucide-react';
 import { Guest } from '../types';
 import { WEDDING_CONFIG } from '../config';
 
 interface RsvpViewProps {
   currentGuestName: string;
-  onRsvpComplete: (guestData: Partial<Guest>) => void;
+  onRsvpComplete: (guestData: Partial<Guest>) => Promise<void>;
 }
 
 export default function RsvpView({ currentGuestName, onRsvpComplete }: RsvpViewProps) {
+  const [sending, setSending] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  const submitLock = useRef(false);
   const copy = WEDDING_CONFIG.copy.rsvpView;
   const [fullName, setFullName] = useState('');
   const [guestsCount, setGuestsCount] = useState<string>(copy.alone);
@@ -28,7 +31,7 @@ export default function RsvpView({ currentGuestName, onRsvpComplete }: RsvpViewP
     }
   }, [currentGuestName]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!fullName.trim()) return;
     if (isAttending === null) return;
@@ -39,7 +42,10 @@ export default function RsvpView({ currentGuestName, onRsvpComplete }: RsvpViewP
     if (guestsCount === copy.family) parsedCount = 4;
     if (!isAttending) parsedCount = 0;
 
-    onRsvpComplete({
+    if (submitLock.current) return;
+    submitLock.current = true; setSending(true); setSubmitError('');
+    try {
+    await onRsvpComplete({
       name: fullName.trim(),
       guestsCount: parsedCount,
       relation,
@@ -59,6 +65,8 @@ export default function RsvpView({ currentGuestName, onRsvpComplete }: RsvpViewP
         setGuestsCount(copy.alone);
       }
     }, 4000);
+    } catch { setSubmitError('Chưa gửi được RSVP. Vui lòng kiểm tra kết nối và thử lại.'); }
+    finally { submitLock.current = false; setSending(false); }
   };
 
   return (
@@ -91,6 +99,7 @@ export default function RsvpView({ currentGuestName, onRsvpComplete }: RsvpViewP
             <span className="font-serif text-4xl text-primary text-[#775a19]">{WEDDING_CONFIG.copy.decoration.flower}</span>
           </div>
 
+          {submitError && <p role="alert" className="text-red-700 mb-4">{submitError}</p>}
           {showConfirmation ? (
             <div className="py-12 text-center text-[#775a19] flex flex-col items-center gap-4 animate-fade-in-up">
               <div className="w-16 h-16 bg-[#e6e3d4] rounded-full flex items-center justify-center mb-2">
@@ -122,6 +131,7 @@ export default function RsvpView({ currentGuestName, onRsvpComplete }: RsvpViewP
                     onChange={(e) => setFullName(e.target.value)}
                     required
                     placeholder={copy.namePlaceholder}
+                  maxLength={150}
                     className="w-full bg-transparent border-none focus:outline-none focus:ring-0 font-sans text-base text-on-surface placeholder-neutral-400"
                   />
                 </div>
@@ -230,7 +240,7 @@ export default function RsvpView({ currentGuestName, onRsvpComplete }: RsvpViewP
               {/* Lời chúc / Blessing */}
               <div className="space-y-2">
                 <label className="font-sans font-bold text-xs text-[#605f53] block tracking-widest uppercase">
-                  {copy.blessing}
+                  {copy.blessing} (tên và lời chúc sẽ hiển thị công khai)
                 </label>
                 <div className="border border-[#e3e2e1] rounded-sm p-4 bg-[#f4f3f2]/30 focus-within:border-[#775a19] focus-within:bg-white transition-all">
                   <textarea
@@ -238,6 +248,7 @@ export default function RsvpView({ currentGuestName, onRsvpComplete }: RsvpViewP
                     value={blessing}
                     onChange={(e) => setBlessing(e.target.value)}
                     placeholder={copy.blessingPlaceholder}
+                  maxLength={2000}
                     className="w-full bg-transparent border-none focus:outline-none focus:ring-0 font-sans text-sm text-on-surface placeholder-neutral-400 resize-none leading-relaxed"
                   />
                 </div>
@@ -245,11 +256,10 @@ export default function RsvpView({ currentGuestName, onRsvpComplete }: RsvpViewP
 
               {/* Submit button */}
               <button
-                type="submit"
-                disabled={isAttending === null}
+                type="submit" disabled={sending || isAttending === null}
                 className={`w-full py-4 font-sans font-bold text-xs tracking-[0.15em] transition-all rounded shadow-md active:scale-95 transform duration-150 uppercase ${isAttending === null ? 'bg-neutral-300 text-neutral-500 cursor-not-allowed' : 'bg-[#775a19] hover:bg-[#c5a059] text-white'}`}
               >
-                {copy.submit}
+                {sending ? 'Đang gửi…' : copy.submit}
               </button>
 
             </form>

@@ -7,7 +7,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Menu, User, Lock, X, Volume2, VolumeX } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Guest } from './types';
-import { INITIAL_GUESTS } from './data';
 import { WEDDING_CONFIG } from './config';
 import NavigationDrawer from './components/NavigationDrawer';
 import InvitationView from './components/InvitationView';
@@ -15,7 +14,8 @@ import EventDetailsView from './components/EventDetailsView';
 import RsvpView from './components/RsvpView';
 import GuestAdminView from './components/GuestAdminView';
 import Toast from './components/Toast';
-import { localStore, sessionStore } from './storage';
+import { localStore } from './storage';
+import { supabase, requireSupabase, loadGuests, submitGuest, checkAdmin } from './supabase';
 
 const readThemeColor = (key: string, fallback: string) => {
   const value = localStore.getItem(key);
@@ -23,19 +23,6 @@ const readThemeColor = (key: string, fallback: string) => {
 };
 
 type ActiveTab = 'INVITATION' | 'DETAILS' | 'RSVP' | 'ADMIN';
-
-const isGuest = (value: unknown): value is Guest => {
-  if (!value || typeof value !== 'object') return false;
-  const guest = value as Guest;
-  return typeof guest.id === 'string' && typeof guest.name === 'string'
-    && typeof guest.group === 'string'
-    && ['SENT', 'DRAFT', 'CONFIRMED', 'DECLINED'].includes(guest.status)
-    && ['ATTENDING', 'DECLINED', 'PENDING'].includes(guest.rsvpStatus)
-    && ['BRIDE', 'GROOM', 'NONE'].includes(guest.relation)
-    && Number.isInteger(guest.guestsCount) && guest.guestsCount >= 0
-    && (guest.blessing === undefined || typeof guest.blessing === 'string')
-    && (guest.updatedAt === undefined || typeof guest.updatedAt === 'string');
-};
 
 const normalizeGuestGroup = (group: string, relation: Guest['relation'] = 'NONE') => {
   const groupCopy = WEDDING_CONFIG.copy.adminView;
@@ -69,6 +56,9 @@ export default function App() {
   const [showPasscodeModal, setShowPasscodeModal] = useState(false);
   const [passcodeInput, setPasscodeInput] = useState('');
   const [passcodeError, setPasscodeError] = useState('');
+  const [adminEmail, setAdminEmail] = useState('');
+  const [loginBusy, setLoginBusy] = useState(false);
+  const [dataError, setDataError] = useState('');
 
   // Dynamic App Theme States
   const [themeTone, setThemeTone] = useState(() => {
@@ -164,29 +154,8 @@ export default function App() {
     }
   };
 
-  // Initialize guest list and check URL search parameters
+  // Read personalized invitation parameters.
   useEffect(() => {
-    // 1. Local Storage initialization
-    const storedGuests = localStore.getItem('eternal_wedding_guests');
-    let loadedGuests: Guest[] = INITIAL_GUESTS;
-    if (storedGuests) {
-      try {
-        const parsedGuests: unknown = JSON.parse(storedGuests);
-        if (Array.isArray(parsedGuests) && parsedGuests.every(isGuest)) {
-          loadedGuests = parsedGuests;
-        }
-      } catch (e) {
-        console.error(copy.logs.guestsParseFailed, e);
-      }
-    }
-    const normalizedGuests = loadedGuests.map((guest) => ({
-      ...guest,
-      group: normalizeGuestGroup(guest.group || '', guest.relation),
-    }));
-    setGuests(normalizedGuests);
-    localStore.setItem('eternal_wedding_guests', JSON.stringify(normalizedGuests));
-
-    // 2. URL Params parsing
     const urlParams = new URLSearchParams(window.location.search);
     const toParam = urlParams.get('to');
     const groupParam = urlParams.get('group');
@@ -198,16 +167,42 @@ export default function App() {
       setCurrentGuestGroup(normalizeGuestGroup(groupParam));
     }
 
-    // Restore admin access only from the current tab's authenticated session.
-    const isStoredAdmin = sessionStore.getItem('eternal_wedding_admin') === 'true';
-    if (isStoredAdmin) {
-      setIsAdmin(true);
-    }
   }, []);
 
-  const saveGuestsToStorage = (updatedGuests: Guest[]) => {
-    setGuests(updatedGuests);
-    localStore.setItem('eternal_wedding_guests', JSON.stringify(updatedGuests));
+  useEffect(() => {
+    if (!supabase) return;
+    let alive = true;
+    const updateAdmin = async () => {
+      try { const admin = await checkAdmin(); if (alive) setIsAdmin(admin); }
+      catch { if (alive) setIsAdmin(false); }
+    };
+    void updateAdmin();
+    const { data } = supabase.auth.onAuthStateChange(() => {
+      // Run database queries outside the auth callback lock.
+      setTimeout(() => { if (alive) void updateAdmin(); }, 0);
+    });
+    return () => { alive = false; data.subscription.unsubscribe(); };
+  }, []);
+
+  useEffect(() => {
+    let alive = true;
+    const refresh = async () => {
+      try {
+        const rows = await loadGuests(isAdmin);
+        if (alive) { setGuests(rows); setDataError(''); }
+      } catch {
+        if (alive) setDataError(supabase ? 'Không tải được dữ liệu. Vui lòng thử lại sau.' : 'Chưa kết nối Supabase. RSVP và lời chúc chưa thể gửi.');
+      }
+    };
+    setGuests([]);
+    void refresh();
+    const timer = setInterval(refresh, 30000);
+    return () => { alive = false; clearInterval(timer); };
+  }, [isAdmin]);
+
+  const refreshGuests = async () => {
+    try { setGuests(await loadGuests(isAdmin)); setDataError(''); }
+    catch { setDataError('Đã lưu nhưng chưa tải lại được dữ liệu. Vui lòng tải lại trang.'); }
   };
 
   const triggerToast = (msg: string) => {
@@ -215,117 +210,42 @@ export default function App() {
     setIsToastVisible(true);
   };
 
-  const handleAddGuest = (name: string, group: string) => {
-    const newGuest: Guest = {
-      id: `g_${Date.now()}`,
-      name,
-      group: normalizeGuestGroup(group),
-      status: 'DRAFT',
-      rsvpStatus: 'PENDING',
-      guestsCount: 1,
-      relation: 'NONE',
-      updatedAt: new Date().toISOString()
-    };
-    const updated = [newGuest, ...guests];
-    saveGuestsToStorage(updated);
+  const newResponse = (data: Partial<Guest>): Guest => ({
+    id: crypto.randomUUID(), name: data.name?.trim() || '',
+    group: normalizeGuestGroup(currentGuestGroup, data.relation || 'NONE'),
+    status: 'CONFIRMED', rsvpStatus: 'PENDING', guestsCount: 0, relation: 'NONE',
+    ...data, updatedAt: new Date().toISOString(),
+  });
+
+  const handleAddGuest = async (name: string, group: string) => {
+    const guest = newResponse({ name, group: normalizeGuestGroup(group), status: 'DRAFT', guestsCount: 1 });
+    const { error } = await requireSupabase().from('wedding_guests').insert(guest);
+    if (error) throw error;
+    await refreshGuests();
     triggerToast(copy.toast.guestAdded.replace('{name}', name));
   };
 
-  const handleDeleteGuest = (id: string) => {
-    const targetGuest = guests.find(g => g.id === id);
-    const updated = guests.filter(g => g.id !== id);
-    saveGuestsToStorage(updated);
-    if (targetGuest) {
-      triggerToast(copy.toast.guestDeleted.replace('{name}', targetGuest.name));
-    }
+  const handleDeleteGuest = async (id: string) => {
+    try {
+      const { error } = await requireSupabase().from('wedding_guests').delete().eq('id', id);
+      if (error) throw error;
+      await refreshGuests();
+    } catch { triggerToast('Không xóa được khách mời. Vui lòng thử lại.'); }
   };
 
-  // Quick RSVP Submit from main view
-  const handleRsvpSubmit = (name: string, attending: boolean, count: number) => {
-    const matchedIdx = guests.findIndex(g => g.name.toLowerCase() === name.toLowerCase());
-
-    if (matchedIdx !== -1) {
-      const updated = [...guests];
-      updated[matchedIdx] = {
-        ...updated[matchedIdx],
-        rsvpStatus: attending ? 'ATTENDING' : 'DECLINED',
-        status: 'CONFIRMED',
-        guestsCount: count,
-        updatedAt: new Date().toISOString()
-      };
-      saveGuestsToStorage(updated);
-    } else {
-      // Add as new guest
-      const newGuest: Guest = {
-        id: `g_${Date.now()}`,
-        name,
-        group: normalizeGuestGroup(currentGuestGroup),
-        status: 'CONFIRMED',
-        rsvpStatus: attending ? 'ATTENDING' : 'DECLINED',
-        guestsCount: count,
-        relation: 'NONE',
-        updatedAt: new Date().toISOString()
-      };
-      saveGuestsToStorage([newGuest, ...guests]);
-    }
-    triggerToast((attending ? copy.toast.rsvpAttending : copy.toast.rsvpReceived).replace('{name}', name));
+  const handleRsvpComplete = async (data: Partial<Guest>) => {
+    await submitGuest(newResponse(data));
+    await refreshGuests();
+    triggerToast(copy.toast.rsvpTabReceived.replace('{name}', data.name || ''));
   };
 
-  // Complete RSVP form submission from RSVP tab
-  const handleRsvpComplete = (guestData: Partial<Guest>) => {
-    const name = guestData.name || '';
-    const matchedIdx = guests.findIndex(g => g.name.toLowerCase() === name.toLowerCase());
-
-    if (matchedIdx !== -1) {
-      const updated = [...guests];
-      updated[matchedIdx] = {
-        ...updated[matchedIdx],
-        ...guestData,
-        updatedAt: new Date().toISOString()
-      } as Guest;
-      saveGuestsToStorage(updated);
-    } else {
-      const newGuest: Guest = {
-        id: `g_${Date.now()}`,
-        name,
-        group: normalizeGuestGroup(currentGuestGroup, guestData.relation || 'GROOM'),
-        status: 'CONFIRMED',
-        rsvpStatus: guestData.rsvpStatus || 'ATTENDING',
-        guestsCount: guestData.guestsCount ?? 1,
-        relation: guestData.relation || 'NONE',
-        blessing: guestData.blessing,
-        updatedAt: new Date().toISOString()
-      };
-      saveGuestsToStorage([newGuest, ...guests]);
-    }
-    triggerToast(copy.toast.rsvpTabReceived.replace('{name}', name));
+  const handleRsvpSubmit = async (name: string, attending: boolean, count: number) => {
+    await handleRsvpComplete({ name, rsvpStatus: attending ? 'ATTENDING' : 'DECLINED', guestsCount: attending ? count : 0 });
   };
 
-  const handleAddQuickBlessing = (name: string, blessing: string) => {
-    const matchedIdx = guests.findIndex(g => g.name.toLowerCase() === name.toLowerCase());
-    if (matchedIdx !== -1) {
-      const updated = [...guests];
-      updated[matchedIdx] = {
-        ...updated[matchedIdx],
-        blessing: blessing,
-        status: 'CONFIRMED',
-        updatedAt: new Date().toISOString()
-      };
-      saveGuestsToStorage(updated);
-    } else {
-      const newGuest: Guest = {
-        id: `g_${Date.now()}`,
-        name,
-        group: normalizeGuestGroup(currentGuestGroup),
-        status: 'CONFIRMED',
-        rsvpStatus: 'PENDING',
-        guestsCount: 0,
-        relation: 'NONE',
-        blessing: blessing,
-        updatedAt: new Date().toISOString()
-      };
-      saveGuestsToStorage([newGuest, ...guests]);
-    }
+  const handleAddQuickBlessing = async (name: string, blessing: string) => {
+    await submitGuest(newResponse({ name, blessing }));
+    await refreshGuests();
     triggerToast(copy.toast.blessingAdded);
   };
 
@@ -348,21 +268,33 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleVerifyPasscode = (e: React.FormEvent) => {
+  const handleVerifyPasscode = async (e: React.FormEvent) => {
     e.preventDefault();
-    const cleanPIN = passcodeInput.trim();
-    // Valid admin test PINs: 2512 (wedding date 25/12), 1204, or 1234
-    if ((copy.adminLogin.allowedPins as readonly string[]).includes(cleanPIN)) {
+    if (loginBusy) return;
+    setLoginBusy(true);
+    setPasscodeError('');
+    try {
+      const client = requireSupabase();
+      const { error } = await client.auth.signInWithPassword({ email: adminEmail.trim(), password: passcodeInput });
+      if (error) throw error;
+      if (!await checkAdmin()) {
+        await client.auth.signOut();
+        throw new Error('Tài khoản chưa được cấp quyền quản trị.');
+      }
       setIsAdmin(true);
-      sessionStore.setItem('eternal_wedding_admin', 'true');
       setShowPasscodeModal(false);
       setPasscodeInput('');
-      setPasscodeError('');
       setActiveTab('ADMIN');
-      triggerToast(copy.adminLogin.loginSuccess);
-    } else {
-      setPasscodeError(copy.adminLogin.wrongPin);
-    }
+    } catch { setPasscodeError('Không đăng nhập được. Kiểm tra kết nối, email, mật khẩu và quyền quản trị.'); }
+    finally { setLoginBusy(false); }
+  };
+
+  const handleLogout = async () => {
+    try {
+      const { error } = await requireSupabase().auth.signOut();
+      if (error) throw error;
+      setIsAdmin(false); setGuests([]); setActiveTab('INVITATION');
+    } catch { triggerToast('Không đăng xuất được. Vui lòng thử lại.'); }
   };
 
   return (
@@ -542,13 +474,7 @@ export default function App() {
                   <span className="hidden sm:inline">{copy.adminLogin.adminButton}</span>
                 </button>
                 <button
-                  onClick={() => {
-                    setIsAdmin(false);
-                    sessionStore.removeItem('eternal_wedding_admin');
-                    setActiveTab('INVITATION');
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                    triggerToast(copy.adminLogin.logout);
-                  }}
+                  onClick={handleLogout}
                   className="text-red-700 hover:text-red-900 border border-red-200 bg-red-50 hover:bg-red-100 transition-colors text-[10px] font-sans font-bold py-1.5 px-2.5 rounded uppercase tracking-wider"
                   title={copy.adminLogin.logoutButton}
                 >
@@ -593,6 +519,7 @@ export default function App() {
 
       {/* Main Subview Canvas */}
       <main className="pt-16 flex-grow flex flex-col items-center">
+        {dataError && <p role="alert" className="w-full bg-amber-50 text-amber-900 p-4 text-center">{dataError}</p>}
         <AnimatePresence mode="wait">
           <motion.div
             key={activeTab + (activeTab === 'INVITATION' ? currentGuestName : '')}
@@ -627,7 +554,7 @@ export default function App() {
               />
             )}
 
-            {activeTab === 'ADMIN' && (
+            {activeTab === 'ADMIN' && isAdmin && (
               <div className="w-full max-w-[1140px] px-6 py-12">
                 <GuestAdminView
                   guests={guests}
@@ -707,11 +634,14 @@ export default function App() {
 
                 <form onSubmit={handleVerifyPasscode} className="space-y-4 pt-2">
                   <div className="text-left">
+                    <label className="block text-sm mb-2" htmlFor="admin-email">Email quản trị</label>
+                    <input id="admin-email" type="email" required autoComplete="username" value={adminEmail} onChange={e => setAdminEmail(e.target.value)} className="w-full border p-3 rounded mb-4" />
                     <label className="font-sans font-bold text-[10px] text-[#605f53] block tracking-widest uppercase mb-1">
                       {copy.adminLogin.pinLabel}
                     </label>
                     <input
                       type="password"
+                      autoComplete="current-password"
                       required
                       placeholder={copy.adminLogin.pinPlaceholder}
                       value={passcodeInput}
@@ -738,6 +668,7 @@ export default function App() {
                     </button>
                     <button
                       type="submit"
+                      disabled={loginBusy}
                       className="flex-1 bg-[#775a19] hover:bg-[#c5a059] text-white py-3 text-xs font-sans font-bold uppercase tracking-widest rounded transition-all shadow-md active:scale-95"
                     >
                       {copy.common.confirm}

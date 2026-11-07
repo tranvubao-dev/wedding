@@ -16,4 +16,4 @@ The custom domain is copied from `public/CNAME` into `dist/CNAME`. If changing d
 
 Before pushing, run `npm ci` and `npm run build`. The build includes TypeScript checks. Invitation links retain the current pathname, including `/wedding/`.
 
-RSVP and wishes currently use browser-local storage only; GitHub Pages does not provide a backend to collect responses across devices.
+RSVP and wishes use Supabase. Complete [Supabase setup](SUPABASE_SETUP.md), including the GitHub Actions variable and secret, before deploying.

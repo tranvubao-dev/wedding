@@ -8,6 +8,13 @@ export default defineConfig(() => {
     plugins: [react(), tailwindcss()],
     // Relative assets work on both custom root domains and /wedding/ paths.
     base: './',
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: { supabase: ['@supabase/supabase-js'] },
+        },
+      },
+    },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
