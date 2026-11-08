@@ -28,7 +28,14 @@ export default function OpeningInvitation({ guestName, guestGroup, onOpen }: Pro
         <span className="paper-corner paper-corner-bottom" aria-hidden="true" />
         <p className="wedding-eyebrow">{copy.experience.openingEyebrow}</p>
         <div className="opening-monogram">
-          <img src={images.monogram} alt="Logo NB" width="210" height="109" />
+          <img
+            src={images.monogram}
+            alt="Logo NB"
+            width="210"
+            height="109"
+            fetchPriority="high"
+            decoding="async"
+          />
         </div>
         <h1 id="opening-title" className="font-couple opening-names">
           <span className="inline-block whitespace-nowrap">{couple.groomName}</span>

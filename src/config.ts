@@ -5,6 +5,14 @@
  */
 
 export const WEDDING_CONFIG = {
+  // ===== HIỆU ỨNG =====
+  effects: {
+    snow: {
+      enabled: true, // Đổi false để tắt tuyết rơi
+      count: 25, // Số bông tuyết, tối đa 40; điện thoại hiển thị tối đa 14
+    },
+  },
+
   // ===== NHẠC NỀN =====
   audio: {
     backgroundMusic:
@@ -28,8 +36,8 @@ export const WEDDING_CONFIG = {
   // Album: content.albumImages. Ảnh bản đồ: guestSchedules.*.receptionImagemap.
   images: {
     paperTexture: './ivory-paper.svg', // Vân giấy ivory nhẹ
-    monogram: './wedding-monogram.svg', // Logo NB dạng nét liền
-    stationeryFlowers: './dried-flowers.svg', // Họa tiết hoa khô nền thiệp
+    monogram: './wedding-monogram.webp', // Logo NB dạng nét liền
+    stationeryFlowers: './dried-flower.webp', // Họa tiết hoa khô nền thiệp
     // Ảnh bìa thiệp mời
     invitationHero:
       'https://lh3.googleusercontent.com/aida-public/AB6AXuBHxG9Nwno9b7LenxKfrpFGEXk4JLb26izVgt2ncC9i-0PI6G3xXB11tXH3G_MnYkGzqACTyLXfCbgaRT3_BW2K15dXSX4eWmJ6F9H96mjJuHJMIbsynBa7qtdkArAacdwvnvp8odB8p6-FVmw3HM0zhvG3eNH4vyXwf100eGPyLGuiLj9Ks-jAr7fSnyYe2QLbeA0dmxOzAi-j-x52FnvfQqjZXcO3at3Ud9b16dbqZIY-1w8nzsQT4vzAbAXS0vh1s2W_S9o3ZpLk',
@@ -114,7 +122,7 @@ export const WEDDING_CONFIG = {
   program: {
     day1: {
       title: 'LỄ ĂN HỎI & LỄ VU QUY',
-      dateText: 'Thứ Tám, 16/12/2026 (Nhằm ngày 08/11 NĂM BÍNH NGỌ)',
+      dateText: 'Thứ Tư, 16/12/2026 (Nhằm ngày 08/11 NĂM BÍNH NGỌ)',
       events: [
         {
           time: '10:00',
@@ -149,12 +157,12 @@ export const WEDDING_CONFIG = {
       dateText: 'Ngày âm lịch: 29 tháng 11 | Ngày dương lịch: 06/01/2027',
       events: [
         {
-          time: '17:00',
+          time: '17:15',
           title: 'Đón khách chúc mừng',
           location: 'Nhà Hàng Tiệc Cưới Hoàng Long 2',
         },
         {
-          time: '17:30',
+          time: '18:00',
           title: 'Khai mạc & Nhập tiệc chính thức',
           location: 'Nhà Hàng Tiệc Cưới Hoàng Long 2',
         },
@@ -224,7 +232,7 @@ export const WEDDING_CONFIG = {
       pinLabel: 'MẬT KHẨU',
       pinPlaceholder: 'Nhập mật khẩu...',
       wrongPin: 'Mã số PIN không đúng. Vui lòng kiểm tra lại!',
-      hint: 'Tài khoản cần được cấp quyền quản trị trong Supabase.',
+      hint: 'Tài khoản cần được cấp quyền quản trị.',
       close: 'Đóng popup đăng nhập',
       loginSuccess: 'Đăng nhập Quản trị viên thành công!',
       logout: 'Đã đăng xuất khỏi quyền Quản trị viên',
@@ -298,7 +306,7 @@ export const WEDDING_CONFIG = {
       receptionType: 'CHUNG VUI NGÀY HẠNH PHÚC',
       locationBadge: 'ĐỊA ĐIỂM SANG TRỌNG',
       locationTitle: 'Địa Điểm Tổ Chức',
-      venueType: 'RESTAURANT & LOUNGE',
+      // venueType: 'RESTAURANT & LOUNGE',
       addressLabel: 'ADDRESS',
       directions: 'Chỉ Đường',
       rsvp: 'Xác nhận tham dự',
@@ -324,7 +332,7 @@ export const WEDDING_CONFIG = {
       alone: 'Chỉ mình tôi',
       plusOne: '+ 1 người',
       plusTwo: '+ 2 người',
-      family: 'Cả gia đình (4 người)',
+      family: 'Cả gia đình',
       relation: 'Bạn là khách của...',
       blessing: 'Lời nhắn gửi yêu thương',
       blessingPlaceholder: 'Viết lời chúc của bạn tại đây để gửi tới đôi uyên ương...',
@@ -389,11 +397,6 @@ export const WEDDING_CONFIG = {
       deleteTitle: 'Xóa khách mời',
       noResults: 'Không tìm thấy khách mời phù hợp',
       listFooter: 'Quản lý chính xác • Tạo ấn tượng tinh tế nhất tới người thân thương',
-      masterpieceTitle: 'Invitation Masterpiece',
-      masterpieceDescription:
-        'Mỗi khách mời sẽ nhận được một trải nghiệm kỹ thuật số sinh động và được cá nhân hoá theo từng cái tên riêng biệt. Thể hiện sự tôn trọng, mến khách và sự tinh tế đỉnh cao của ngày cưới.',
-      templates: 'VIEW DESIGN TEMPLATES',
-      tabletAlt: 'Máy tính bảng hiển thị thiệp cưới trực tuyến',
       presets: [
         {
           name: 'Ivory · Rose Gold (Gốc)',
@@ -534,37 +537,37 @@ export const WEDDING_CONFIG = {
       },
       {
         id: 'img6',
-        url: 'https://res.cloudinary.com/dp2vpbmjg/image/upload/v1793427639/25_vybaeh.png',
+        url: 'https://res.cloudinary.com/dp2vpbmjg/image/upload/v1793427618/20_nm8dhe.png',
         caption: 'Khoảnh khắc trao nhẫn hạnh phúc',
       },
       {
         id: 'img7',
-        url: 'https://res.cloudinary.com/dp2vpbmjg/image/upload/v1793427643/26_wpiznk.png',
+        url: 'https://res.cloudinary.com/dp2vpbmjg/image/upload/v1793427622/21_vftpwf.png',
         caption: 'Hôn lễ khởi đầu cho hành trình lãng mạn mới',
       },
       {
         id: 'img8',
-        url: 'https://res.cloudinary.com/dp2vpbmjg/image/upload/v1793427639/25_vybaeh.png',
+        url: 'https://res.cloudinary.com/dp2vpbmjg/image/upload/v1793427557/5_zm5sty.png',
         caption: 'Khoảnh khắc trao nhẫn hạnh phúc',
       },
       {
         id: 'img9',
-        url: 'https://res.cloudinary.com/dp2vpbmjg/image/upload/v1793427643/26_wpiznk.png',
+        url: 'https://res.cloudinary.com/dp2vpbmjg/image/upload/v1793427548/3_b1kqsb.png',
         caption: 'Hôn lễ khởi đầu cho hành trình lãng mạn mới',
       },
       {
         id: 'img10',
-        url: 'https://res.cloudinary.com/dp2vpbmjg/image/upload/v1793427639/25_vybaeh.png',
+        url: 'https://res.cloudinary.com/dp2vpbmjg/image/upload/v1793427542/1_vego69.png',
         caption: 'Khoảnh khắc trao nhẫn hạnh phúc',
       },
       {
         id: 'img11',
-        url: 'https://res.cloudinary.com/dp2vpbmjg/image/upload/v1793427639/25_vybaeh.png',
+        url: 'https://res.cloudinary.com/dp2vpbmjg/image/upload/v1793427573/9_tczo62.png',
         caption: 'Khoảnh khắc trao nhẫn hạnh phúc',
       },
       {
         id: 'img12',
-        url: 'https://res.cloudinary.com/dp2vpbmjg/image/upload/v1793427643/26_wpiznk.png',
+        url: 'https://res.cloudinary.com/dp2vpbmjg/image/upload/v1793427585/12_rq08ev.png',
         caption: 'Hôn lễ khởi đầu cho hành trình lãng mạn mới',
       },
     ],

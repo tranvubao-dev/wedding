@@ -21,6 +21,8 @@ import {
   Send,
 } from 'lucide-react';
 import { ALBUM_IMAGES } from '../data';
+import Countdown from './Countdown';
+import { optimizedImage, responsiveImage } from '../imageUtils';
 import { Guest } from '../types';
 import { WEDDING_CONFIG } from '../config';
 import { localStore } from '../storage';
@@ -64,46 +66,6 @@ export default function InvitationView({
   const [blessingMessage, setBlessingMessage] = useState('');
   const [blessingLikes, setBlessingLikes] = useState<Record<string, number>>({});
   const [userLiked, setUserLiked] = useState<Record<string, boolean>>({});
-
-  // Countdown States
-  const [timeLeft, setTimeLeft] = useState({
-    days: 0,
-    hours: 0,
-    minutes: 0,
-    seconds: 0,
-    isCompleted: false,
-  });
-
-  // The countdown follows the selected invitation's ceremony date and time.
-  useEffect(() => {
-    const targetDate = new Date(schedule.countdownTarget).getTime();
-
-    const updateCountdown = () => {
-      const now = new Date().getTime();
-      const difference = targetDate - now;
-
-      if (difference <= 0) {
-        setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0, isCompleted: true });
-      } else {
-        const days = Math.floor(difference / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((difference % (1000 * 60)) / 1000);
-
-        setTimeLeft({
-          days,
-          hours,
-          minutes,
-          seconds,
-          isCompleted: false,
-        });
-      }
-    };
-    updateCountdown();
-    const interval = setInterval(updateCountdown, 1000);
-
-    return () => clearInterval(interval);
-  }, [schedule.countdownTarget]);
 
   // Sync RSVP and Blessing Name when prop guestName updates
   useEffect(() => {
@@ -253,6 +215,26 @@ export default function InvitationView({
     };
   }, []);
 
+  useEffect(() => {
+    if (lightboxIndex === null) return;
+    if ((navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData)
+      return;
+    const neighbours = [-1, 1].map((offset) => {
+      const image = new Image();
+      image.decoding = 'async';
+      image.src = optimizedImage(
+        ALBUM_IMAGES[(lightboxIndex + offset + ALBUM_IMAGES.length) % ALBUM_IMAGES.length].url,
+        1920,
+      );
+      return image;
+    });
+    return () => {
+      neighbours.forEach((image) => {
+        image.onload = null;
+      });
+    };
+  }, [lightboxIndex]);
+
   // Lightbox handlers
   const handleNextImage = () => {
     if (lightboxIndex === null) return;
@@ -350,59 +332,7 @@ export default function InvitationView({
         </div>
       </section>
 
-      {/* Countdown Timer Block */}
-      <section className="w-full max-w-[1140px] px-6 py-12 text-center">
-        <div className="p-4 md:p-10">
-          <span className="font-sans font-bold text-[10px] text-primary tracking-[0.3em] block mb-4 uppercase">
-            {copy.countdownEyebrow}
-          </span>
-          <h3 className="font-serif text-2xl md:text-4xl text-on-surface font-semibold mb-8">
-            {copy.countdownTitle}
-          </h3>
-
-          <div className="grid grid-cols-4 gap-2 md:gap-6 max-w-2xl mx-auto">
-            {/* Days Card */}
-            <div className="p-3 md:p-6 flex flex-col items-center">
-              <span className="font-sans font-bold text-3xl md:text-5xl text-primary">
-                {timeLeft.days.toString().padStart(2, '0')}
-              </span>
-              <span className="font-sans text-[10px] md:text-xs text-secondary font-bold uppercase tracking-wider mt-2">
-                {copy.days}
-              </span>
-            </div>
-
-            {/* Hours Card */}
-            <div className="p-3 md:p-6 flex flex-col items-center">
-              <span className="font-sans font-bold text-3xl md:text-5xl text-primary">
-                {timeLeft.hours.toString().padStart(2, '0')}
-              </span>
-              <span className="font-sans text-[10px] md:text-xs text-secondary font-bold uppercase tracking-wider mt-2">
-                {copy.hours}
-              </span>
-            </div>
-
-            {/* Minutes Card */}
-            <div className="p-3 md:p-6 flex flex-col items-center">
-              <span className="font-sans font-bold text-3xl md:text-5xl text-primary">
-                {timeLeft.minutes.toString().padStart(2, '0')}
-              </span>
-              <span className="font-sans text-[10px] md:text-xs text-secondary font-bold uppercase tracking-wider mt-2">
-                {copy.minutes}
-              </span>
-            </div>
-
-            {/* Seconds Card */}
-            <div className="p-3 md:p-6 flex flex-col items-center">
-              <span className="font-sans font-bold text-3xl md:text-5xl text-primary transition-all w-12 text-center inline-block">
-                {timeLeft.seconds.toString().padStart(2, '0')}
-              </span>
-              <span className="font-sans text-[10px] md:text-xs text-secondary font-bold uppercase tracking-wider mt-2">
-                {copy.seconds}
-              </span>
-            </div>
-          </div>
-        </div>
-      </section>
+      <Countdown target={schedule.countdownTarget} dateLine={schedule.dateLine} />
 
       <section id="wedding-details" className="w-full scroll-mt-16">
         {detailsContent}
@@ -413,7 +343,9 @@ export default function InvitationView({
         </p>
         <figure>
           <img
-            src={WEDDING_CONFIG.images.invitationPortrait}
+            src={optimizedImage(WEDDING_CONFIG.images.invitationPortrait, 960)}
+            srcSet={responsiveImage(WEDDING_CONFIG.images.invitationPortrait)}
+            sizes="(max-width: 960px) calc(100vw - 48px), 912px"
             alt={copy.altHero}
             loading="lazy"
             decoding="async"
@@ -452,7 +384,14 @@ export default function InvitationView({
               onClick={() => setLightboxIndex(idx)}
             >
               <img
-                src={img.url}
+                src={optimizedImage(img.url, 640)}
+                srcSet={responsiveImage(img.url)}
+                sizes={
+                  idx % 5 === 0
+                    ? '(max-width: 1140px) calc(100vw - 48px), 1092px'
+                    : '(max-width: 1140px) calc((100vw - 80px) / 2), 530px'
+                }
+                decoding="async"
                 alt={img.caption}
                 className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
                 loading="lazy"
@@ -524,7 +463,8 @@ export default function InvitationView({
                 className="max-w-4xl max-h-[75vh] md:max-h-[80vh] relative"
               >
                 <img
-                  src={ALBUM_IMAGES[lightboxIndex].url}
+                  src={optimizedImage(ALBUM_IMAGES[lightboxIndex].url, 1920)}
+                  decoding="async"
                   alt={ALBUM_IMAGES[lightboxIndex].caption}
                   className="rounded-lg shadow-2xl max-w-full max-h-[75vh] md:max-h-[80vh] object-contain mx-auto border border-white/10"
                   referrerPolicy="no-referrer"

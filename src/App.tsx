@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { Menu, User, Lock, X, Volume2, VolumeX } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Guest } from './types';
@@ -12,9 +12,10 @@ import NavigationDrawer from './components/NavigationDrawer';
 import InvitationView from './components/InvitationView';
 import EventDetailsView from './components/EventDetailsView';
 import RsvpView from './components/RsvpView';
-import GuestAdminView from './components/GuestAdminView';
+const GuestAdminView = lazy(() => import('./components/GuestAdminView'));
 import Toast from './components/Toast';
 import OpeningInvitation from './components/OpeningInvitation';
+import Snowfall from './components/Snowfall';
 import { localStore } from './storage';
 import { supabase, requireSupabase, loadGuests, submitGuest, checkAdmin } from './supabase';
 
@@ -385,7 +386,13 @@ export default function App() {
                 <Menu size={22} />
               </button>
               <h1 className="font-serif text-xl md:text-2xl text-primary font-semibold tracking-tight select-none">
-                <img src={WEDDING_CONFIG.images.monogram} alt="Logo NB" width="70" height="45" />
+                <img
+                  src={WEDDING_CONFIG.images.monogram}
+                  alt="Logo NB"
+                  width="70"
+                  height="45"
+                  decoding="async"
+                />
               </h1>
             </div>
 
@@ -591,25 +598,41 @@ export default function App() {
 
             {activeTab === 'ADMIN' && isAdmin && (
               <div id="wedding-admin" className="w-full max-w-[1140px] px-6 py-12">
-                <GuestAdminView
-                  guests={guests}
-                  onAddGuest={handleAddGuest}
-                  onDeleteGuest={handleDeleteGuest}
-                  onPreviewGuest={handlePreviewGuest}
-                  onTriggerCopyToast={(name) =>
-                    triggerToast(copy.toast.copiedGuestLink.replace('{name}', name))
-                  }
-                  themeTone={themeTone}
-                  themeAccent={themeAccent}
-                  onChangeTheme={handleThemeChange}
-                />
+                <Suspense fallback={<p className="text-center py-8">Đang tải quản trị…</p>}>
+                  <GuestAdminView
+                    guests={guests}
+                    onAddGuest={handleAddGuest}
+                    onDeleteGuest={handleDeleteGuest}
+                    onPreviewGuest={handlePreviewGuest}
+                    onTriggerCopyToast={(name) =>
+                      triggerToast(copy.toast.copiedGuestLink.replace('{name}', name))
+                    }
+                    themeTone={themeTone}
+                    themeAccent={themeAccent}
+                    onChangeTheme={handleThemeChange}
+                  />
+                </Suspense>
               </div>
             )}
           </div>
         </main>
 
         <footer className="wedding-footer">
-          <p className="font-couple text-5xl mb-6">
+          <div className="footer-flowers" aria-hidden="true">
+            <img
+              src={WEDDING_CONFIG.images.stationeryFlowers}
+              alt=""
+              className="footer-flower footer-flower-left"
+              loading="lazy"
+            />
+            <img
+              src={WEDDING_CONFIG.images.stationeryFlowers}
+              alt=""
+              className="footer-flower footer-flower-right"
+              loading="lazy"
+            />
+          </div>
+          <p className="font-couple text-5xl mb-3">
             {WEDDING_CONFIG.couple.groomName} &amp; {WEDDING_CONFIG.couple.brideName}
           </p>
           <p className="font-serif text-xl italic max-w-md mx-auto text-secondary leading-relaxed">
@@ -759,6 +782,7 @@ export default function App() {
           onClose={() => setIsToastVisible(false)}
         />
       </div>
+      {activeTab !== 'ADMIN' && !showPasscodeModal && <Snowfall />}
       <AnimatePresence>
         {!isOpened && (
           <OpeningInvitation

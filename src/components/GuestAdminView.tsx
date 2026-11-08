@@ -1,3 +1,4 @@
+import { optimizedImage, responsiveImage } from '../imageUtils';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -585,32 +586,6 @@ export default function GuestAdminView({
           </div>
         </div>
       </div>
-
-      {/* Visual Break Section at bottom of bento grid */}
-      <section className="mt-16 bg-surface-container p-8 md:p-12 border border-outline-variant rounded relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8">
-        <div className="flex-1 space-y-4 text-center md:text-left">
-          <h3 className="font-serif text-3xl font-semibold text-primary tracking-tight">
-            {copy.masterpieceTitle}
-          </h3>
-          <p className="font-sans text-sm text-secondary leading-relaxed max-w-xl">
-            {copy.masterpieceDescription}
-          </p>
-          <div className="pt-2">
-            <button className="px-6 py-3 border border-primary text-primary hover:bg-primary hover:text-white transition-all font-sans font-semibold text-xs uppercase tracking-widest rounded-sm">
-              {copy.templates}
-            </button>
-          </div>
-        </div>
-
-        <div className="w-full md:w-[320px] aspect-video rounded overflow-hidden border border-outline-variant shadow-md z-10 transition-transform hover:scale-[1.02] duration-300">
-          <img
-            src={WEDDING_CONFIG.images.adminPreview}
-            alt={copy.tabletAlt}
-            className="w-full h-full object-cover"
-            referrerPolicy="no-referrer"
-          />
-        </div>
-      </section>
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import { optimizedImage, responsiveImage } from '../imageUtils';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -286,7 +287,11 @@ export default function RsvpView({ currentGuestName, onRsvpComplete }: RsvpViewP
         <div className="mt-16 grid grid-cols-2 gap-4 pb-12">
           <div className="stationery-panel bg-surface border border-outline-variant rounded shadow-sm overflow-hidden h-[180px] md:h-[240px]">
             <img
-              src={WEDDING_CONFIG.images.rsvpInvitation}
+              src={optimizedImage(WEDDING_CONFIG.images.rsvpInvitation, 640)}
+              srcSet={responsiveImage(WEDDING_CONFIG.images.rsvpInvitation)}
+              sizes="(max-width: 640px) 45vw, 480px"
+              loading="lazy"
+              decoding="async"
               alt={copy.image1Alt}
               className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
               referrerPolicy="no-referrer"
@@ -295,7 +300,11 @@ export default function RsvpView({ currentGuestName, onRsvpComplete }: RsvpViewP
 
           <div className="stationery-panel bg-surface border border-outline-variant rounded shadow-sm overflow-hidden h-[180px] md:h-[240px] translate-y-6">
             <img
-              src={WEDDING_CONFIG.images.rsvpReception}
+              src={optimizedImage(WEDDING_CONFIG.images.rsvpReception, 640)}
+              srcSet={responsiveImage(WEDDING_CONFIG.images.rsvpReception)}
+              sizes="(max-width: 640px) 45vw, 480px"
+              loading="lazy"
+              decoding="async"
               alt={copy.image2Alt}
               className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
               referrerPolicy="no-referrer"

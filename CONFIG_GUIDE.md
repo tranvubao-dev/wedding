@@ -118,3 +118,11 @@ Corinthia vẫn dùng cho tên hai bạn. Album dùng ảnh lớn xen kẽ cặp
 Bản thiết kế hiện tại lấy cảm hứng từ giấy ivory, mực olive và kim loại rose gold. Các giá trị nằm trong `colors`: `primary` là màu nhấn olive, `coupleNames` là màu tên riêng, `accent` là rose gold, `metallicLight`/`metallicDark` điều khiển điểm sáng và cạnh kim loại, `gold` là champagne trang trí.
 
 `images.paperTexture` trỏ tới `public/ivory-paper.svg`, lớp vân giấy nhẹ dùng chung cho nền, thiệp, các khung nội dung và chân trang. Nút có class `metal-button` được tạo bằng CSS: vân kim loại, viền nổi, bóng đổ và ánh sáng lướt khi hover. Hiệu ứng giảm khi thiết bị bật Reduce Motion. Màu tên màn mở thiệp đọc từ config, không đặt inline trong component.
+
+## Tối ưu tải ảnh
+
+Ảnh Cloudinary được xử lý qua `src/imageUtils.ts`: tự chọn định dạng/chất lượng và dùng `srcSet` để trình duyệt tải đúng kích thước màn hình. Giữ URL gốc trong config; không cần thêm tham số thủ công. Album tải ảnh nhỏ phù hợp màn hình, còn lightbox dùng bản tối đa 1920px. Khi mở lightbox, hai ảnh kế bên được tải trước (trừ khi bật Save Data).
+
+`images.monogram` và `images.stationeryFlowers` hiện dùng bản WebP nhẹ từ logo/hoa gốc. Các SVG gốc vẫn giữ trong `public/`. Nếu thay SVG gốc, cần xuất lại WebP tương ứng hoặc đổi đường dẫn config sang file ảnh mới; không chỉ thay SVG rồi giữ đường dẫn WebP cũ.
+
+Trang ưu tiên mở thiệp trước, sau đó tải trước ảnh chân dung và ảnh album đầu khi trình duyệt rảnh. Các ảnh bản đồ/RSVP/album còn lại được tải theo vị trí cuộn. Bộ đếm được tách riêng để không render lại album mỗi giây; trang quản trị chỉ tải JavaScript khi mở. Không cần tải toàn bộ ảnh gốc để hiển thị ảnh thu nhỏ.

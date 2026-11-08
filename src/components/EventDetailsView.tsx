@@ -1,3 +1,4 @@
+import { optimizedImage, responsiveImage } from '../imageUtils';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -177,9 +178,6 @@ export default function EventDetailsView({ onNavigateToRsvp, guestGroup }: Event
 
               <div className="space-y-6 text-on-surface">
                 <div>
-                  <p className="font-sans font-bold text-[11px] text-primary mb-1 tracking-widest uppercase">
-                    {copy.venueType}
-                  </p>
                   <p className="font-serif text-xl font-bold text-on-surface">
                     {schedule.receptionVenueName}
                   </p>
@@ -217,7 +215,11 @@ export default function EventDetailsView({ onNavigateToRsvp, guestGroup }: Event
             {/* Right Map Image */}
             <div className="lg:col-span-7 h-[320px] lg:h-[380px] w-full bg-outline-variant relative overflow-hidden rounded border border-outline-variant group shadow-inner">
               <img
-                src={schedule.receptionImagemap}
+                src={optimizedImage(schedule.receptionImagemap, 960)}
+                srcSet={responsiveImage(schedule.receptionImagemap)}
+                sizes="(max-width: 1024px) calc(100vw - 96px), 600px"
+                loading="lazy"
+                decoding="async"
                 alt={copy.mapAlt}
                 className="w-full h-full object-cover filter grayscale hover:grayscale-0 transition-all duration-700 opacity-90"
                 referrerPolicy="no-referrer"
