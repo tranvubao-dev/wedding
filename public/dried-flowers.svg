@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 520" fill="none">
+<defs>
+ <radialGradient id="petal"><stop stop-color="#b9997b" stop-opacity=".75"/><stop offset="1" stop-color="#d9bba4" stop-opacity=".32"/></radialGradient>
+ <radialGradient id="ochre"><stop stop-color="#9e7040" stop-opacity=".8"/><stop offset="1" stop-color="#cfa873" stop-opacity=".4"/></radialGradient>
+ <g id="bud"><ellipse rx="3" ry="6" fill="#b49987" opacity=".55"/><ellipse cx="4" cy="-2" rx="3" ry="5" fill="#d8b9ab" opacity=".6"/></g>
+ <g id="leaf"><path d="M0 0Q-30-37-38-20Q-36 0 0 0Z" fill="#9e9d79" opacity=".55"/><path d="M0 0-31-20" stroke="#8f8d6d" stroke-width=".6"/></g>
+ <g id="flower"><ellipse cy="-17" rx="12" ry="22" fill="url(#petal)"/><ellipse cy="-17" rx="12" ry="22" fill="url(#petal)" transform="rotate(72)"/><ellipse cy="-17" rx="12" ry="22" fill="url(#petal)" transform="rotate(144)"/><ellipse cy="-17" rx="12" ry="22" fill="url(#petal)" transform="rotate(216)"/><ellipse cy="-17" rx="12" ry="22" fill="url(#petal)" transform="rotate(288)"/><circle r="4" fill="#8d725c" opacity=".6"/></g>
+</defs>
+<g stroke="#979375" stroke-width="1.2" stroke-linecap="round">
+ <path d="M157 505C168 390 136 279 98 109M157 470C199 338 213 247 202 164M155 444C111 366 80 301 54 231M165 383C214 327 240 289 259 239M137 310C112 240 124 188 145 146M181 334C176 254 160 229 150 212"/>
+ <path d="m104 139-30-40m39 73 25-53m-15 96-45-31m58 71 20-38m-53 75-39-31m20 48 18-39m98 44 35-39m-26 8-24-35m7-42 29-31m-14-13-18-33m43 196 12-42m13 2 27-20M131 237l-12-37m10 15 22-27"/>
+</g>
+<use href="#leaf" transform="translate(151 377) rotate(8)"/>
+<use href="#leaf" transform="translate(180 351) rotate(115) scale(.9)"/>
+<use href="#leaf" transform="translate(122 274) rotate(20) scale(.8)"/>
+<use href="#leaf" transform="translate(204 270) rotate(150) scale(.75)"/>
+<use href="#leaf" transform="translate(87 303) rotate(-10) scale(.65)"/>
+<use href="#flower" transform="translate(96 105) rotate(-12) scale(1.15)"/>
+<use href="#flower" transform="translate(152 212) scale(.5)"/>
+<g transform="translate(202 166)"><path d="M0 15C-26 8-23-15-13-17C-8-34 8-29 12-18C34-20 26 5 12 15Z" fill="url(#ochre)"/><path d="M0 16-4-8M0 16 12-10M0 16-15-5" stroke="#9a7e56" opacity=".4"/></g>
+<use href="#bud" transform="translate(72 98) rotate(-35)"/><use href="#bud" transform="translate(138 119)"/>
+<use href="#bud" transform="translate(78 184) rotate(-50)"/><use href="#bud" transform="translate(156 217)"/>
+<use href="#bud" transform="translate(64 261) rotate(-30)"/><use href="#bud" transform="translate(102 270)"/>
+<use href="#bud" transform="translate(225 231) rotate(40)"/><use href="#bud" transform="translate(187 247) rotate(-30)"/>
+<use href="#bud" transform="translate(229 187) rotate(30)"/><use href="#bud" transform="translate(196 185) rotate(-15)"/>
+<use href="#bud" transform="translate(253 286) rotate(30)"/><use href="#bud" transform="translate(238 266)"/>
+<use href="#bud" transform="translate(119 199)"/><use href="#bud" transform="translate(151 187) rotate(30)"/>
+<use href="#bud" transform="translate(145 146) rotate(15)"/><use href="#bud" transform="translate(259 239) rotate(40)"/>
+</svg>

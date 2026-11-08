@@ -34,3 +34,12 @@ RSVP và lời chúc được lưu vào Supabase. Quản trị đăng nhập b�
 Sao chép `.env.example` thành `.env.local`, điền Project URL và publishable key, rồi chạy lại dev server. GitHub Actions cần hai giá trị cấu hình như hướng dẫn; workflow sẽ dừng nếu thiếu cấu hình.
 
 Màu giao diện và lượt thích vẫn lưu cục bộ. Dữ liệu mẫu/cục bộ cũ không tự được tải lên database. Mỗi phản hồi là một bản ghi riêng, không ghi đè theo tên.
+
+## Format code tự động
+
+Cài extension **Prettier - Code formatter** (`esbenp.prettier-vscode`) trong VS Code hoặc Cursor. Workspace đã bật `editor.formatOnSave`: nhấn lưu để tự format theo `.prettierrc.json` (thụt 2 dấu cách, dùng dấu nháy đơn trong JS/TS, dấu chấm phẩy, độ dài dòng ưu tiên 100 ký tự).
+
+- `npm run format`: format toàn bộ các file được hỗ trợ trong dự án.
+- `npm run format:check`: kiểm tra định dạng mà không thay đổi file.
+
+Thư mục build, assets, dữ liệu handoff, file môi trường và lockfile được bỏ qua qua `.prettierignore`. SQL không được Prettier mặc định hỗ trợ; cấu hình này không thêm formatter SQL.

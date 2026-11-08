@@ -1,0 +1,11 @@
+{
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.formatOnSave": true,
+  "editor.formatOnSaveMode": "file",
+  "prettier.requireConfig": true,
+  "files.eol": "\n",
+  "[typescript][typescriptreact][javascript][javascriptreact][json][jsonc][css][html][markdown][yaml]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+  }
+}

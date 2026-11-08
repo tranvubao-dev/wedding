@@ -14,6 +14,7 @@ import EventDetailsView from './components/EventDetailsView';
 import RsvpView from './components/RsvpView';
 import GuestAdminView from './components/GuestAdminView';
 import Toast from './components/Toast';
+import OpeningInvitation from './components/OpeningInvitation';
 import { localStore } from './storage';
 import { supabase, requireSupabase, loadGuests, submitGuest, checkAdmin } from './supabase';
 
@@ -39,6 +40,7 @@ const normalizeGuestGroup = (group: string, relation: Guest['relation'] = 'NONE'
 
 export default function App() {
   const copy = WEDDING_CONFIG.copy;
+  const [isOpened, setIsOpened] = useState(false);
   const [activeTab, setActiveTab] = useState<ActiveTab>('INVITATION');
   const [guests, setGuests] = useState<Guest[]>([]);
   const [currentGuestName, setCurrentGuestName] = useState<string>(copy.common.guest);
@@ -62,17 +64,17 @@ export default function App() {
 
   // Dynamic App Theme States
   const [themeTone, setThemeTone] = useState(() => {
-    return readThemeColor('wedding_theme_tone', WEDDING_CONFIG.colors.primary);
+    return readThemeColor('wedding_ivory_metal_tone', WEDDING_CONFIG.colors.primary);
   });
   const [themeAccent, setThemeAccent] = useState(() => {
-    return readThemeColor('wedding_theme_accent', WEDDING_CONFIG.colors.accent);
+    return readThemeColor('wedding_ivory_metal_accent', WEDDING_CONFIG.colors.accent);
   });
 
   const handleThemeChange = (tone: string, accent: string) => {
     setThemeTone(tone);
     setThemeAccent(accent);
-    localStore.setItem('wedding_theme_tone', tone);
-    localStore.setItem('wedding_theme_accent', accent);
+    localStore.setItem('wedding_ivory_metal_tone', tone);
+    localStore.setItem('wedding_ivory_metal_accent', accent);
   };
 
   // Background Music States
@@ -80,61 +82,66 @@ export default function App() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const userManuallyPaused = useRef(false);
 
-  // Background Music Management Effect
   useEffect(() => {
-    if (!audioRef.current) {
-      audioRef.current = new Audio('https://res.cloudinary.com/dp2vpbmjg/video/upload/v1781189747/wedding_murjqb.mp3');
-      audioRef.current.loop = true;
-      audioRef.current.volume = 0.5;
-    }
-
-    const audio = audioRef.current;
-
-    // Try starting audio immediately
-    const startAudio = () => {
-      if (userManuallyPaused.current) return;
-      audio.play()
-        .then(() => {
-          setIsMusicPlaying(true);
-          // Remove event listeners once play commences successfully
-          removeInteractionListeners();
-        })
-        .catch(err => {
-          // Failure is expected when the browser blocks un-triggered autoplay initially
-          console.log(copy.logs.autoplayBlocked);
-        });
-    };
-
-    // Fallback callbacks
-    const handleInteraction = () => {
-      startAudio();
-    };
-
-    const addInteractionListeners = () => {
-      window.addEventListener('click', handleInteraction, { once: true });
-      window.addEventListener('scroll', handleInteraction, { once: true });
-      window.addEventListener('touchstart', handleInteraction, { once: true });
-    };
-
-    const removeInteractionListeners = () => {
-      window.removeEventListener('click', handleInteraction);
-      window.removeEventListener('scroll', handleInteraction);
-      window.removeEventListener('touchstart', handleInteraction);
-    };
-
-    // Attempt immediately
-    startAudio();
-
-    // Setup fallback trigger
-    addInteractionListeners();
-
+    const audio = new Audio(WEDDING_CONFIG.audio.backgroundMusic);
+    audio.loop = WEDDING_CONFIG.audio.loop;
+    audio.volume = Math.min(1, Math.max(0, WEDDING_CONFIG.audio.volume));
+    audio.preload = 'none';
+    audioRef.current = audio;
     return () => {
-      removeInteractionListeners();
-      if (audio) {
-        audio.pause();
-      }
+      audio.pause();
+      audioRef.current = null;
     };
   }, []);
+
+  useEffect(() => {
+    if (isOpened) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [isOpened]);
+
+  const openInvitation = () => {
+    setIsOpened(true);
+    setActiveTab('INVITATION');
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    userManuallyPaused.current = false;
+    void audioRef.current
+      ?.play()
+      .then(() => setIsMusicPlaying(true))
+      .catch(() => setIsMusicPlaying(false));
+    setTimeout(
+      () => document.getElementById('invitation-title')?.focus({ preventScroll: true }),
+      800,
+    );
+  };
+
+  const navigateTo = (tab: ActiveTab, sectionId?: string) => {
+    setActiveTab(tab);
+    setIsDrawerOpen(false);
+    const id =
+      sectionId ||
+      (tab === 'DETAILS'
+        ? 'wedding-details'
+        : tab === 'RSVP'
+          ? 'wedding-rsvp'
+          : tab === 'ADMIN'
+            ? 'wedding-admin'
+            : 'wedding-invitation');
+    // Wait for the public page to mount when returning from administration.
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        document.getElementById(id)?.scrollIntoView({
+          behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+            ? 'instant'
+            : 'smooth',
+          block: 'start',
+        });
+      }),
+    );
+  };
 
   const toggleMusic = () => {
     if (!audioRef.current) return;
@@ -144,11 +151,12 @@ export default function App() {
       setIsMusicPlaying(false);
     } else {
       userManuallyPaused.current = false;
-      audioRef.current.play()
+      audioRef.current
+        .play()
         .then(() => {
           setIsMusicPlaying(true);
         })
-        .catch(err => {
+        .catch((err) => {
           console.warn(copy.logs.audioPlayFailed, err);
         });
     }
@@ -166,22 +174,30 @@ export default function App() {
     if (groupParam) {
       setCurrentGuestGroup(normalizeGuestGroup(groupParam));
     }
-
   }, []);
 
   useEffect(() => {
     if (!supabase) return;
     let alive = true;
     const updateAdmin = async () => {
-      try { const admin = await checkAdmin(); if (alive) setIsAdmin(admin); }
-      catch { if (alive) setIsAdmin(false); }
+      try {
+        const admin = await checkAdmin();
+        if (alive) setIsAdmin(admin);
+      } catch {
+        if (alive) setIsAdmin(false);
+      }
     };
     void updateAdmin();
     const { data } = supabase.auth.onAuthStateChange(() => {
       // Run database queries outside the auth callback lock.
-      setTimeout(() => { if (alive) void updateAdmin(); }, 0);
+      setTimeout(() => {
+        if (alive) void updateAdmin();
+      }, 0);
     });
-    return () => { alive = false; data.subscription.unsubscribe(); };
+    return () => {
+      alive = false;
+      data.subscription.unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
@@ -189,20 +205,35 @@ export default function App() {
     const refresh = async () => {
       try {
         const rows = await loadGuests(isAdmin);
-        if (alive) { setGuests(rows); setDataError(''); }
+        if (alive) {
+          setGuests(rows);
+          setDataError('');
+        }
       } catch {
-        if (alive) setDataError(supabase ? 'Không tải được dữ liệu. Vui lòng thử lại sau.' : 'Chưa kết nối Supabase. RSVP và lời chúc chưa thể gửi.');
+        if (alive)
+          setDataError(
+            supabase
+              ? 'Không tải được dữ liệu. Vui lòng thử lại sau.'
+              : 'Chưa kết nối Supabase. RSVP và lời chúc chưa thể gửi.',
+          );
       }
     };
     setGuests([]);
     void refresh();
     const timer = setInterval(refresh, 30000);
-    return () => { alive = false; clearInterval(timer); };
+    return () => {
+      alive = false;
+      clearInterval(timer);
+    };
   }, [isAdmin]);
 
   const refreshGuests = async () => {
-    try { setGuests(await loadGuests(isAdmin)); setDataError(''); }
-    catch { setDataError('Đã lưu nhưng chưa tải lại được dữ liệu. Vui lòng tải lại trang.'); }
+    try {
+      setGuests(await loadGuests(isAdmin));
+      setDataError('');
+    } catch {
+      setDataError('Đã lưu nhưng chưa tải lại được dữ liệu. Vui lòng tải lại trang.');
+    }
   };
 
   const triggerToast = (msg: string) => {
@@ -211,14 +242,24 @@ export default function App() {
   };
 
   const newResponse = (data: Partial<Guest>): Guest => ({
-    id: crypto.randomUUID(), name: data.name?.trim() || '',
+    id: crypto.randomUUID(),
+    name: data.name?.trim() || '',
     group: normalizeGuestGroup(currentGuestGroup, data.relation || 'NONE'),
-    status: 'CONFIRMED', rsvpStatus: 'PENDING', guestsCount: 0, relation: 'NONE',
-    ...data, updatedAt: new Date().toISOString(),
+    status: 'CONFIRMED',
+    rsvpStatus: 'PENDING',
+    guestsCount: 0,
+    relation: 'NONE',
+    ...data,
+    updatedAt: new Date().toISOString(),
   });
 
   const handleAddGuest = async (name: string, group: string) => {
-    const guest = newResponse({ name, group: normalizeGuestGroup(group), status: 'DRAFT', guestsCount: 1 });
+    const guest = newResponse({
+      name,
+      group: normalizeGuestGroup(group),
+      status: 'DRAFT',
+      guestsCount: 1,
+    });
     const { error } = await requireSupabase().from('wedding_guests').insert(guest);
     if (error) throw error;
     await refreshGuests();
@@ -230,17 +271,15 @@ export default function App() {
       const { error } = await requireSupabase().from('wedding_guests').delete().eq('id', id);
       if (error) throw error;
       await refreshGuests();
-    } catch { triggerToast('Không xóa được khách mời. Vui lòng thử lại.'); }
+    } catch {
+      triggerToast('Không xóa được khách mời. Vui lòng thử lại.');
+    }
   };
 
   const handleRsvpComplete = async (data: Partial<Guest>) => {
     await submitGuest(newResponse(data));
     await refreshGuests();
     triggerToast(copy.toast.rsvpTabReceived.replace('{name}', data.name || ''));
-  };
-
-  const handleRsvpSubmit = async (name: string, attending: boolean, count: number) => {
-    await handleRsvpComplete({ name, rsvpStatus: attending ? 'ATTENDING' : 'DECLINED', guestsCount: attending ? count : 0 });
   };
 
   const handleAddQuickBlessing = async (name: string, blessing: string) => {
@@ -259,13 +298,11 @@ export default function App() {
   };
 
   const handleNavigateToDetails = () => {
-    setActiveTab('DETAILS');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    navigateTo('DETAILS');
   };
 
   const handleNavigateToRsvp = () => {
-    setActiveTab('RSVP');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    navigateTo('RSVP');
   };
 
   const handleVerifyPasscode = async (e: React.FormEvent) => {
@@ -275,9 +312,12 @@ export default function App() {
     setPasscodeError('');
     try {
       const client = requireSupabase();
-      const { error } = await client.auth.signInWithPassword({ email: adminEmail.trim(), password: passcodeInput });
+      const { error } = await client.auth.signInWithPassword({
+        email: adminEmail.trim(),
+        password: passcodeInput,
+      });
       if (error) throw error;
-      if (!await checkAdmin()) {
+      if (!(await checkAdmin())) {
         await client.auth.signOut();
         throw new Error('Tài khoản chưa được cấp quyền quản trị.');
       }
@@ -285,438 +325,449 @@ export default function App() {
       setShowPasscodeModal(false);
       setPasscodeInput('');
       setActiveTab('ADMIN');
-    } catch { setPasscodeError('Không đăng nhập được. Kiểm tra kết nối, email, mật khẩu và quyền quản trị.'); }
-    finally { setLoginBusy(false); }
+    } catch {
+      setPasscodeError(
+        'Không đăng nhập được. Kiểm tra kết nối, email, mật khẩu và quyền quản trị.',
+      );
+    } finally {
+      setLoginBusy(false);
+    }
   };
 
   const handleLogout = async () => {
     try {
       const { error } = await requireSupabase().auth.signOut();
       if (error) throw error;
-      setIsAdmin(false); setGuests([]); setActiveTab('INVITATION');
-    } catch { triggerToast('Không đăng xuất được. Vui lòng thử lại.'); }
+      setIsAdmin(false);
+      setGuests([]);
+      setActiveTab('INVITATION');
+    } catch {
+      triggerToast('Không đăng xuất được. Vui lòng thử lại.');
+    }
   };
 
   return (
     <div className="bg-background text-on-surface font-sans selection:bg-primary-container selection:text-on-primary-container botanical-overlay min-h-screen flex flex-col overflow-x-hidden">
-
-      {/* Dynamic Theme Color Overrides */}
       <style>{`
         :root {
-          --color-primary: ${themeTone} !important;
-          --color-primary-container: ${themeAccent} !important;
-          --color-surface-tint: ${themeTone} !important;
-          --color-outline: ${themeTone}80 !important;
-        }
-        
-        /* Overrides for hardcoded arbitrary classes referencing old colors */
-        .bg-\\[\\#775a19\\] {
-          background-color: ${themeTone};
-        }
-        .text-\\[\\#775a19\\] {
-          color: ${themeTone};
-        }
-        .border-\\[\\#775a19\\] {
-          border-color: ${themeTone};
-        }
-        .hover\\:bg-\\[\\#775a19\\]:hover {
-          background-color: ${themeTone};
-        }
-        .hover\\:text-\\[\\#775a19\\]:hover {
-          color: ${themeTone};
-        }
-        .hover\\:border-\\[\\#775a19\\]:hover {
-          border-color: ${themeTone};
-        }
-        .focus-within\\:border-\\[\\#775a19\\]:focus-within {
-          border-color: ${themeTone};
-        }
-        .active\\:border-\\[\\#775a19\\]:active {
-          border-color: ${themeTone};
-        }
-        .focus\\:border-\\[\\#775a19\\]:focus {
-          border-color: ${themeTone};
-        }
-        .bg-\\[\\#775a19\\]\\/10 {
-          background-color: ${themeTone}1a;
-        }
-        .bg-\\[\\#775a19\\]\\/5 {
-          background-color: ${themeTone}0d;
-        }
-        .bg-\\[\\#775a19\\]\\/12 {
-          background-color: ${themeTone}1f;
-        }
-        .hover\\:bg-\\[\\#775a19\\]\\/10:hover {
-          background-color: ${themeTone}1a;
-        }
-        .hover\\:bg-\\[\\#775a19\\]\\/12:hover {
-          background-color: ${themeTone}1f;
-        }
-
-        .bg-\\[\\#c5a059\\] {
-          background-color: ${themeAccent};
-        }
-        .text-\\[\\#c5a059\\] {
-          color: ${themeAccent};
-        }
-        .border-\\[\\#c5a059\\] {
-          border-color: ${themeAccent};
-        }
-        .hover\\:bg-\\[\\#c5a059\\]:hover {
-          background-color: ${themeAccent};
-        }
-        .text-\\[\\#c5a059\\]\\/10 {
-          color: ${themeAccent}1a;
-        }
-        .bg-\\[\\#e6e3d4\\] {
-          background-color: ${themeTone}13;
-        }
-        .border-\\[\\#e3d1b4\\] {
-          border-color: ${themeTone}3b;
-        }
-        .border-\\[\\#d1c5b4\\] {
-          border-color: ${themeTone}4d;
-        }
-        
-        .luxury-card:hover {
-          box-shadow: 0 10px 30px -15px ${themeTone}14 !important;
-          border-color: ${themeTone}59 !important;
-        }
-        
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: ${themeTone}3b !important;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: ${themeTone} !important;
+          --color-primary: ${themeTone};
+          --color-primary-container: ${themeAccent};
+          --color-surface-tint: ${themeTone};
+          --color-outline: ${WEDDING_CONFIG.colors.border};
+          --color-background: ${WEDDING_CONFIG.colors.background};
+          --color-surface: ${WEDDING_CONFIG.colors.paper};
+          --color-surface-container-lowest: ${WEDDING_CONFIG.colors.paper};
+          --color-surface-container-low: ${WEDDING_CONFIG.colors.soft};
+          --color-surface-container: ${WEDDING_CONFIG.colors.soft};
+          --color-outline-variant: ${WEDDING_CONFIG.colors.border};
+          --color-on-surface: ${WEDDING_CONFIG.colors.ink};
+          --color-on-background: ${WEDDING_CONFIG.colors.ink};
+          --color-secondary: ${WEDDING_CONFIG.colors.muted};
+          --color-couple-ink: ${WEDDING_CONFIG.colors.coupleNames};
+          --metal-light: ${WEDDING_CONFIG.colors.metallicLight};
+          --metal-dark: ${WEDDING_CONFIG.colors.metallicDark};
+          --champagne: ${WEDDING_CONFIG.colors.gold};
+          --paper-texture: url('${WEDDING_CONFIG.images.paperTexture}');
         }
       `}</style>
 
-      {/* Top Application Header Bar */}
-      <header className="bg-white border-b border-outline-variant fixed top-0 left-0 right-0 z-50 h-16 transition-all shadow-sm">
-        <div className="flex justify-between items-center w-full px-5 md:px-16 h-full">
-
-          {/* Hamburger menu & Brand Label */}
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => setIsDrawerOpen(true)}
-              className="text-[#775a19] hover:opacity-80 transition-opacity p-1.5 focus:outline-none focus:ring-1 focus:ring-primary/20 rounded"
-              aria-label={copy.accessibility.toggleNavigation}
-            >
-              <Menu size={22} />
-            </button>
-            <h1 className="font-serif text-xl md:text-2xl text-[#775a19] font-semibold tracking-tight select-none">
-              {copy.app.brand}
-            </h1>
-          </div>
-
-          {/* Desktop Navigation Links */}
-          <nav className="hidden md:flex items-center gap-8">
-            <button
-              onClick={() => { setActiveTab('INVITATION'); window.scrollTo({ top: 0 }); }}
-              className={`font-sans font-bold text-xs tracking-widest uppercase transition-colors relative py-1 ${activeTab === 'INVITATION' ? 'text-[#775a19]' : 'text-[#605f53] hover:text-[#775a19]'
-                }`}
-            >
-              {copy.navigation.invitation}
-              {activeTab === 'INVITATION' && (
-                <motion.div layoutId="activeNavIndicator" className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#775a19]" />
-              )}
-            </button>
-
-            <button
-              onClick={() => { setActiveTab('DETAILS'); window.scrollTo({ top: 0 }); }}
-              className={`font-sans font-bold text-xs tracking-widest uppercase transition-colors relative py-1 ${activeTab === 'DETAILS' ? 'text-[#775a19]' : 'text-[#605f53] hover:text-[#775a19]'
-                }`}
-            >
-              {copy.navigation.details}
-              {activeTab === 'DETAILS' && (
-                <motion.div layoutId="activeNavIndicator" className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#775a19]" />
-              )}
-            </button>
-
-            <button
-              onClick={() => { setActiveTab('RSVP'); window.scrollTo({ top: 0 }); }}
-              className={`font-sans font-bold text-xs tracking-widest uppercase transition-colors relative py-1 ${activeTab === 'RSVP' ? 'text-[#775a19]' : 'text-[#605f53] hover:text-[#775a19]'
-                }`}
-            >
-              {copy.navigation.rsvp}
-              {activeTab === 'RSVP' && (
-                <motion.div layoutId="activeNavIndicator" className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#775a19]" />
-              )}
-            </button>
-
-            {isAdmin && (
+      <div inert={!isOpened}>
+        {/* Top Application Header Bar */}
+        <header className="wedding-header fixed top-0 left-0 right-0 z-50 h-16">
+          <div className="flex justify-between items-center w-full pl-5 pr-16 md:pl-16 h-full">
+            {/* Hamburger menu & Brand Label */}
+            <div className="flex items-center gap-4">
               <button
-                onClick={() => { setActiveTab('ADMIN'); window.scrollTo({ top: 0 }); }}
-                className={`font-sans font-bold text-xs tracking-widest uppercase transition-colors relative py-1 ${activeTab === 'ADMIN' ? 'text-[#775a19]' : 'text-[#605f53] hover:text-[#775a19]'
-                  }`}
+                onClick={() => setIsDrawerOpen(true)}
+                className="text-primary hover:opacity-80 transition-opacity p-1.5 focus:outline-none focus:ring-1 focus:ring-primary/20 rounded"
+                aria-label={copy.accessibility.toggleNavigation}
               >
-                {copy.navigation.guests}
-                {activeTab === 'ADMIN' && (
-                  <motion.div layoutId="activeNavIndicator" className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#775a19]" />
+                <Menu size={22} />
+              </button>
+              <h1 className="font-serif text-xl md:text-2xl text-primary font-semibold tracking-tight select-none">
+                <img src={WEDDING_CONFIG.images.monogram} alt="Logo NB" width="70" height="45" />
+              </h1>
+            </div>
+
+            {/* Desktop Navigation Links */}
+            <nav className="hidden md:flex items-center gap-8">
+              <button
+                onClick={() => {
+                  navigateTo('INVITATION');
+                  document
+                    .getElementById('wedding-invitation')
+                    ?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className={`font-sans font-bold text-xs tracking-widest uppercase transition-colors relative py-1 ${
+                  activeTab === 'INVITATION' ? 'text-primary' : 'text-secondary hover:text-primary'
+                }`}
+              >
+                {copy.navigation.invitation}
+                {activeTab === 'INVITATION' && (
+                  <motion.div
+                    layoutId="activeNavIndicator"
+                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"
+                  />
                 )}
               </button>
-            )}
-          </nav>
 
-          {/* User Status representation icon */}
-          <div className="flex items-center gap-4">
-            {isAdmin ? (
-              <div className="flex items-center gap-3">
+              <button
+                onClick={() => {
+                  navigateTo('DETAILS');
+                  document
+                    .getElementById('wedding-details')
+                    ?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className={`font-sans font-bold text-xs tracking-widest uppercase transition-colors relative py-1 ${
+                  activeTab === 'DETAILS' ? 'text-primary' : 'text-secondary hover:text-primary'
+                }`}
+              >
+                {copy.navigation.details}
+                {activeTab === 'DETAILS' && (
+                  <motion.div
+                    layoutId="activeNavIndicator"
+                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"
+                  />
+                )}
+              </button>
+
+              <button
+                onClick={() => {
+                  navigateTo('RSVP');
+                  document.getElementById('wedding-rsvp')?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className={`font-sans font-bold text-xs tracking-widest uppercase transition-colors relative py-1 ${
+                  activeTab === 'RSVP' ? 'text-primary' : 'text-secondary hover:text-primary'
+                }`}
+              >
+                {copy.navigation.rsvp}
+                {activeTab === 'RSVP' && (
+                  <motion.div
+                    layoutId="activeNavIndicator"
+                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"
+                  />
+                )}
+              </button>
+
+              <a
+                className="text-[10px] tracking-widest text-secondary hover:text-primary uppercase"
+                href="#wedding-album"
+                onClick={(event) => {
+                  event.preventDefault();
+                  navigateTo('INVITATION', 'wedding-album');
+                }}
+              >
+                {copy.experience.albumNav}
+              </a>
+              <a
+                className="text-[10px] tracking-widest text-secondary hover:text-primary uppercase"
+                href="#wedding-wishes"
+                onClick={(event) => {
+                  event.preventDefault();
+                  navigateTo('INVITATION', 'wedding-wishes');
+                }}
+              >
+                {copy.experience.wishesNav}
+              </a>
+              {isAdmin && (
                 <button
                   onClick={() => {
                     setActiveTab('ADMIN');
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    window.scrollTo({ top: 0 });
                   }}
-                  className="text-[#775a19] hover:opacity-85 transition-opacity flex items-center gap-1.5 focus:outline-none py-1.5 px-3 rounded border border-[#775a19]/20 bg-[#775a19]/5 text-xs font-sans font-bold uppercase tracking-wider"
-                  title={copy.navigation.guests}
+                  className={`font-sans font-bold text-xs tracking-widest uppercase transition-colors relative py-1 ${
+                    activeTab === 'ADMIN' ? 'text-primary' : 'text-secondary hover:text-primary'
+                  }`}
                 >
-                  <User size={15} />
-                  <span className="hidden sm:inline">{copy.adminLogin.adminButton}</span>
+                  {copy.navigation.guests}
+                  {activeTab === 'ADMIN' && (
+                    <motion.div
+                      layoutId="activeNavIndicator"
+                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"
+                    />
+                  )}
                 </button>
+              )}
+            </nav>
+
+            {/* User Status representation icon */}
+            <div className="flex items-center gap-4">
+              {isAdmin ? (
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => {
+                      setActiveTab('ADMIN');
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="text-primary hover:opacity-85 transition-opacity flex items-center gap-1.5 focus:outline-none py-1.5 px-3 rounded border border-primary/20 bg-primary/5 text-xs font-sans font-bold uppercase tracking-wider"
+                    title={copy.navigation.guests}
+                  >
+                    <User size={15} />
+                    <span className="hidden sm:inline">{copy.adminLogin.adminButton}</span>
+                  </button>
+                  <button
+                    onClick={handleLogout}
+                    className="text-red-700 hover:text-red-900 border border-red-200 bg-red-50 hover:bg-red-100 transition-colors text-[10px] font-sans font-bold py-1.5 px-2.5 rounded uppercase tracking-wider"
+                    title={copy.adminLogin.logoutButton}
+                  >
+                    Thoát
+                  </button>
+                </div>
+              ) : (
                 <button
-                  onClick={handleLogout}
-                  className="text-red-700 hover:text-red-900 border border-red-200 bg-red-50 hover:bg-red-100 transition-colors text-[10px] font-sans font-bold py-1.5 px-2.5 rounded uppercase tracking-wider"
-                  title={copy.adminLogin.logoutButton}
+                  onClick={() => {
+                    setShowPasscodeModal(true);
+                    setPasscodeInput('');
+                    setPasscodeError('');
+                  }}
+                  // Vùng bấm trong suốt: mở đăng nhập admin, không hiển thị icon hay tooltip.
+                  type="button"
+                  className="w-10 h-10 shrink-0 cursor-default border-0 bg-transparent"
+                  aria-label={copy.adminLogin.loginTitle}
                 >
-                  Thoát
+                  <span className="sr-only">{copy.adminLogin.loginTitle}</span>
                 </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => {
-                  setShowPasscodeModal(true);
-                  setPasscodeInput('');
-                  setPasscodeError('');
-                }}
-                className="text-[#605f53] hover:text-[#775a19] transition-colors p-1.5 focus:outline-none border border-transparent hover:border-[#775a19]/25 rounded-full"
-                title={copy.adminLogin.loginTitle}
-              >
-                <User size={20} />
-              </button>
-            )}
+              )}
+            </div>
           </div>
+        </header>
 
-        </div>
-      </header>
+        {/* Slideout Mobile Navigation Drawer */}
+        <NavigationDrawer
+          isOpen={isDrawerOpen}
+          onClose={() => setIsDrawerOpen(false)}
+          activeTab={activeTab}
+          isAdmin={isAdmin}
+          onSelect={(tab) => {
+            if (tab === 'ALBUM' || tab === 'WISHES') {
+              navigateTo('INVITATION', tab === 'ALBUM' ? 'wedding-album' : 'wedding-wishes');
+              return;
+            }
+            if (tab === 'ADMIN' && !isAdmin) {
+              setShowPasscodeModal(true);
+              setIsDrawerOpen(false);
+              return;
+            }
+            navigateTo(tab as ActiveTab);
+            const id =
+              tab === 'DETAILS'
+                ? 'wedding-details'
+                : tab === 'RSVP'
+                  ? 'wedding-rsvp'
+                  : 'wedding-invitation';
+            document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+          }}
+        />
 
-      {/* Slideout Mobile Navigation Drawer */}
-      <NavigationDrawer
-        isOpen={isDrawerOpen}
-        onClose={() => setIsDrawerOpen(false)}
-        activeTab={activeTab}
-        isAdmin={isAdmin}
-        onSelect={(tab) => {
-          if (tab === 'ADMIN' && !isAdmin) {
-            setShowPasscodeModal(true);
-            setIsDrawerOpen(false);
-            return;
-          }
-          setActiveTab(tab as ActiveTab);
-          setIsDrawerOpen(false);
-          window.scrollTo({ top: 0 });
-        }}
-      />
-
-      {/* Main Subview Canvas */}
-      <main className="pt-16 flex-grow flex flex-col items-center">
-        {dataError && <p role="alert" className="w-full bg-amber-50 text-amber-900 p-4 text-center">{dataError}</p>}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeTab + (activeTab === 'INVITATION' ? currentGuestName : '')}
-            initial={{ opacity: 0, translateY: 15 }}
-            animate={{ opacity: 1, translateY: 0 }}
-            exit={{ opacity: 0, translateY: -15 }}
-            transition={{ duration: 0.35, ease: 'easeInOut' }}
-            className="w-full flex flex-col items-center"
-          >
-            {activeTab === 'INVITATION' && (
+        {/* Main Subview Canvas */}
+        <main className="pt-16 flex-grow flex flex-col items-center">
+          {dataError && (
+            <p role="alert" className="w-full bg-amber-50 text-amber-900 p-4 text-center">
+              {dataError}
+            </p>
+          )}
+          <div className="w-full flex flex-col items-center">
+            {activeTab !== 'ADMIN' && (
               <InvitationView
                 guestName={currentGuestName}
                 guestGroup={currentGuestGroup}
-                onRsvpSubmit={handleRsvpSubmit}
                 onNavigateToDetails={handleNavigateToDetails}
                 guests={guests}
                 onAddQuickBlessing={handleAddQuickBlessing}
-              />
-            )}
-
-            {activeTab === 'DETAILS' && (
-              <EventDetailsView
-                onNavigateToRsvp={handleNavigateToRsvp}
-                guestGroup={currentGuestGroup}
-              />
-            )}
-
-            {activeTab === 'RSVP' && (
-              <RsvpView
-                currentGuestName={currentGuestName}
-                onRsvpComplete={handleRsvpComplete}
+                detailsContent={
+                  <EventDetailsView
+                    onNavigateToRsvp={handleNavigateToRsvp}
+                    guestGroup={currentGuestGroup}
+                  />
+                }
+                rsvpContent={
+                  <RsvpView
+                    currentGuestName={currentGuestName}
+                    onRsvpComplete={handleRsvpComplete}
+                  />
+                }
               />
             )}
 
             {activeTab === 'ADMIN' && isAdmin && (
-              <div className="w-full max-w-[1140px] px-6 py-12">
+              <div id="wedding-admin" className="w-full max-w-[1140px] px-6 py-12">
                 <GuestAdminView
                   guests={guests}
                   onAddGuest={handleAddGuest}
                   onDeleteGuest={handleDeleteGuest}
                   onPreviewGuest={handlePreviewGuest}
-                  onTriggerCopyToast={(name) => triggerToast(copy.toast.copiedGuestLink.replace('{name}', name))}
+                  onTriggerCopyToast={(name) =>
+                    triggerToast(copy.toast.copiedGuestLink.replace('{name}', name))
+                  }
                   themeTone={themeTone}
                   themeAccent={themeAccent}
                   onChangeTheme={handleThemeChange}
                 />
               </div>
             )}
-          </motion.div>
-        </AnimatePresence>
-      </main>
+          </div>
+        </main>
 
-      {/* Styled Luxury Wedding Footer */}
-      <footer className="bg-white border-t border-outline-variant w-full py-12 flex flex-col items-center justify-center space-y-4 px-5 mt-auto">
-        <h2 className="font-serif text-2xl text-[#775a19] font-semibold tracking-tight">
-          {copy.app.brand}
-        </h2>
-        <p className="font-sans text-xs text-neutral-400 text-center max-w-md">
-          {copy.app.footerCopyright}
-        </p>
-        <div className="flex gap-8 mt-2">
-          <a href="#" className="font-sans font-semibold text-[11px] text-[#605f53] hover:text-[#775a19] transition-colors uppercase tracking-[0.1em]">
-            {copy.app.privacy}
-          </a>
-          <a href="#" className="font-sans font-semibold text-[11px] text-[#605f53] hover:text-[#775a19] transition-colors uppercase tracking-[0.1em]">
-            {copy.app.contact}
-          </a>
-        </div>
-      </footer>
+        <footer className="wedding-footer">
+          <p className="font-couple text-5xl mb-6">
+            {WEDDING_CONFIG.couple.groomName} &amp; {WEDDING_CONFIG.couple.brideName}
+          </p>
+          <p className="font-serif text-xl italic max-w-md mx-auto text-secondary leading-relaxed">
+            {copy.experience.closingMessage}
+          </p>
+          <div className="fine-rule" />
+          <button
+            className="text-xs underline underline-offset-8 text-secondary min-h-11"
+            onClick={() => {
+              setIsOpened(false);
+              audioRef.current?.pause();
+              setIsMusicPlaying(false);
+            }}
+          >
+            {copy.experience.replayInvitation}
+          </button>
+        </footer>
 
-      {/* Passcode verification Modal overlay */}
-      <AnimatePresence>
-        {showPasscodeModal && (
-          <>
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 0.5 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowPasscodeModal(false)}
-              className="fixed inset-0 bg-black/60 z-[65]"
-            />
-
-            {/* Modal Box */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, translateY: 20 }}
-              animate={{ opacity: 1, scale: 1, translateY: 0 }}
-              exit={{ opacity: 0, scale: 0.95, translateY: 20 }}
-              transition={{ duration: 0.3, ease: 'easeOut' }}
-              className="fixed inset-0 m-auto w-[90%] max-w-md h-fit bg-[#faf9f8] p-8 rounded border border-[#e3d1b4] shadow-2xl z-[70] overflow-hidden"
-            >
-              {/* Close Button */}
-              <button
+        {/* Passcode verification Modal overlay */}
+        <AnimatePresence>
+          {showPasscodeModal && (
+            <>
+              {/* Backdrop */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 0.5 }}
+                exit={{ opacity: 0 }}
                 onClick={() => setShowPasscodeModal(false)}
-                className="absolute top-4 right-4 text-[#775a19] hover:bg-[#775a19]/10 p-2 rounded-full transition-colors focus:ring-1 focus:ring-primary/20"
-                aria-label={copy.adminLogin.close}
+                className="fixed inset-0 bg-black/60 z-[65]"
+              />
+
+              {/* Modal Box */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, translateY: 20 }}
+                animate={{ opacity: 1, scale: 1, translateY: 0 }}
+                exit={{ opacity: 0, scale: 0.95, translateY: 20 }}
+                transition={{ duration: 0.3, ease: 'easeOut' }}
+                className="fixed inset-0 m-auto w-[90%] max-w-md h-fit bg-background p-8 rounded border border-outline-variant shadow-2xl z-[70] overflow-hidden"
               >
-                <X size={18} />
-              </button>
+                {/* Close Button */}
+                <button
+                  onClick={() => setShowPasscodeModal(false)}
+                  className="absolute top-4 right-4 text-primary hover:bg-primary/10 p-2 rounded-full transition-colors focus:ring-1 focus:ring-primary/20"
+                  aria-label={copy.adminLogin.close}
+                >
+                  <X size={18} />
+                </button>
 
-              <div className="text-center space-y-4">
-                <div className="w-12 h-12 bg-[#775a19]/10 text-[#775a19] rounded-full flex items-center justify-center mx-auto">
-                  <Lock size={20} />
-                </div>
-
-                <div>
-                  <h3 className="font-serif text-2xl font-bold text-on-surface">{copy.adminLogin.title}</h3>
-                  <p className="font-sans text-xs text-[#605f53] mt-1 leading-relaxed">
-                    {copy.adminLogin.description}
-                  </p>
-                </div>
-
-                <form onSubmit={handleVerifyPasscode} className="space-y-4 pt-2">
-                  <div className="text-left">
-                    <label className="block text-sm mb-2" htmlFor="admin-email">Email quản trị</label>
-                    <input id="admin-email" type="email" required autoComplete="username" value={adminEmail} onChange={e => setAdminEmail(e.target.value)} className="w-full border p-3 rounded mb-4" />
-                    <label className="font-sans font-bold text-[10px] text-[#605f53] block tracking-widest uppercase mb-1">
-                      {copy.adminLogin.pinLabel}
-                    </label>
-                    <input
-                      type="password"
-                      autoComplete="current-password"
-                      required
-                      placeholder={copy.adminLogin.pinPlaceholder}
-                      value={passcodeInput}
-                      onChange={(e) => {
-                        setPasscodeInput(e.target.value);
-                        setPasscodeError('');
-                      }}
-                      className="w-full bg-white border border-[#e3e2e1] active:border-[#775a19] focus:outline-none focus:border-[#775a19] transition-all py-3 px-4 rounded text-center tracking-[0.25em] font-mono text-lg text-on-surface placeholder:normal-case placeholder:tracking-normal placeholder:font-sans placeholder:text-neutral-300"
-                    />
-                    {passcodeError && (
-                      <p className="text-red-700 text-xs font-sans mt-2 text-center font-medium">
-                        ⚠️ {passcodeError}
-                      </p>
-                    )}
+                <div className="text-center space-y-4">
+                  <div className="w-12 h-12 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto">
+                    <Lock size={20} />
                   </div>
 
-                  <div className="flex gap-3 pt-2">
-                    <button
-                      type="button"
-                      onClick={() => setShowPasscodeModal(false)}
-                      className="flex-1 border border-[#605f53]/35 text-[#605f53] py-3 text-xs font-sans font-bold uppercase tracking-widest rounded transition-all hover:bg-neutral-100"
-                    >
-                      {copy.common.skip}
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={loginBusy}
-                      className="flex-1 bg-[#775a19] hover:bg-[#c5a059] text-white py-3 text-xs font-sans font-bold uppercase tracking-widest rounded transition-all shadow-md active:scale-95"
-                    >
-                      {copy.common.confirm}
-                    </button>
+                  <div>
+                    <h3 className="font-serif text-2xl font-bold text-on-surface">
+                      {copy.adminLogin.title}
+                    </h3>
+                    <p className="font-sans text-xs text-secondary mt-1 leading-relaxed">
+                      {copy.adminLogin.description}
+                    </p>
                   </div>
-                </form>
 
-                <div className="pt-2">
-                  <p className="font-sans text-[10px] text-neutral-400 italic">
-                    {copy.adminLogin.hint}
-                  </p>
+                  <form onSubmit={handleVerifyPasscode} className="space-y-4 pt-2">
+                    <div className="text-left">
+                      <label className="block text-sm mb-2" htmlFor="admin-email">
+                        Email quản trị
+                      </label>
+                      <input
+                        id="admin-email"
+                        type="email"
+                        required
+                        autoComplete="username"
+                        value={adminEmail}
+                        onChange={(e) => setAdminEmail(e.target.value)}
+                        className="w-full border p-3 rounded mb-4"
+                      />
+                      <label className="font-sans font-bold text-[10px] text-secondary block tracking-widest uppercase mb-1">
+                        {copy.adminLogin.pinLabel}
+                      </label>
+                      <input
+                        type="password"
+                        autoComplete="current-password"
+                        required
+                        placeholder={copy.adminLogin.pinPlaceholder}
+                        value={passcodeInput}
+                        onChange={(e) => {
+                          setPasscodeInput(e.target.value);
+                          setPasscodeError('');
+                        }}
+                        className="w-full bg-surface border border-outline-variant active:border-primary focus:outline-none focus:border-primary transition-all py-3 px-4 rounded text-center tracking-[0.25em] font-mono text-lg text-on-surface placeholder:normal-case placeholder:tracking-normal placeholder:font-sans placeholder:text-neutral-300"
+                      />
+                      {passcodeError && (
+                        <p className="text-red-700 text-xs font-sans mt-2 text-center font-medium">
+                          ⚠️ {passcodeError}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="flex gap-3 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowPasscodeModal(false)}
+                        className="flex-1 border border-secondary/35 text-secondary py-3 text-xs font-sans font-bold uppercase tracking-widest rounded transition-all hover:bg-neutral-100"
+                      >
+                        {copy.common.skip}
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={loginBusy}
+                        className="flex-1 metal-button bg-primary hover:bg-primary-container text-white py-3 text-xs font-sans font-bold uppercase tracking-widest rounded transition-all shadow-md active:scale-95"
+                      >
+                        {copy.common.confirm}
+                      </button>
+                    </div>
+                  </form>
+
+                  <div className="pt-2">
+                    <p className="font-sans text-[10px] text-neutral-400 italic">
+                      {copy.adminLogin.hint}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </motion.div>
-          </>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
+
+        {/* Global Floating Music Widget */}
+        <div className="fixed top-3 right-3 z-50">
+          <button
+            onClick={toggleMusic}
+            className="w-10 h-10 bg-surface hover:bg-primary text-primary hover:text-white rounded-full flex items-center justify-center border border-outline-variant/60 transition-all duration-300 relative group active:scale-95 focus:outline-none"
+            title={isMusicPlaying ? copy.app.pauseMusicTitle : copy.app.playMusicTitle}
+          >
+            {isMusicPlaying ? (
+              <Volume2 size={22} className="relative z-10" />
+            ) : (
+              <VolumeX size={22} className="relative z-10" />
+            )}
+          </button>
+        </div>
+
+        {/* Custom Global Toast Component */}
+        <Toast
+          message={toastMessage}
+          isVisible={isToastVisible}
+          onClose={() => setIsToastVisible(false)}
+        />
+      </div>
+      <AnimatePresence>
+        {!isOpened && (
+          <OpeningInvitation
+            guestName={currentGuestName}
+            guestGroup={currentGuestGroup}
+            onOpen={openInvitation}
+          />
         )}
       </AnimatePresence>
-
-      {/* Global Floating Music Widget */}
-      <div className="fixed bottom-6 right-6 z-40">
-        <button
-          onClick={toggleMusic}
-          className="w-14 h-14 bg-white hover:bg-[#775a19] text-[#775a19] hover:text-white rounded-full flex items-center justify-center shadow-xl border border-[#e3d1b4]/60 transition-all duration-300 relative group active:scale-95 focus:outline-none"
-          title={isMusicPlaying ? copy.app.pauseMusicTitle : copy.app.playMusicTitle}
-        >
-          {isMusicPlaying && (
-            <span className="absolute inset-0 rounded-full bg-[#775a19]/10 animate-ping" />
-          )}
-          {isMusicPlaying ? <Volume2 size={22} className="relative z-10" /> : <VolumeX size={22} className="relative z-10" />}
-
-          {/* Oscillating visual wave when playing */}
-          {isMusicPlaying && (
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2 flex gap-0.5 items-end justify-center bg-white/90 backdrop-blur-sm border border-[#e3d1b4]/40 h-5 px-1.5 py-0.5 rounded-full shadow-sm">
-              <span className="w-0.5 h-1.5 bg-[#775a19] rounded-full animate-pulse" />
-              <span className="w-0.5 h-3 bg-[#775a19] rounded-full animate-pulse delay-75" />
-              <span className="w-0.5 h-2.5 bg-[#775a19] rounded-full animate-pulse delay-150" />
-            </div>
-          )}
-        </button>
-      </div>
-
-      {/* Custom Global Toast Component */}
-      <Toast
-        message={toastMessage}
-        isVisible={isToastVisible}
-        onClose={() => setIsToastVisible(false)}
-      />
-
     </div>
   );
 }
