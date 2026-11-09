@@ -6,9 +6,19 @@ interface Props {
   guestName: string;
   guestGroup: string;
   onOpen: () => void;
+  isLoading?: boolean;
+  error?: string;
+  onRetry?: () => void;
 }
 
-export default function OpeningInvitation({ guestName, guestGroup, onOpen }: Props) {
+export default function OpeningInvitation({
+  guestName,
+  guestGroup,
+  onOpen,
+  isLoading = false,
+  error = '',
+  onRetry,
+}: Props) {
   const reducedMotion = useReducedMotion();
   const { couple, copy, images, guestSchedules } = WEDDING_CONFIG;
   const schedule =
@@ -46,10 +56,23 @@ export default function OpeningInvitation({ guestName, guestGroup, onOpen }: Pro
         <p className="font-serif text-xl italic text-secondary">{schedule.dateLine}</p>
         <p className="wedding-eyebrow mt-8">{copy.invitationView.invitationTo}</p>
         <p className="font-serif text-2xl sm:text-3xl mt-2 mb-8">{guestName}</p>
-        <button autoFocus onClick={onOpen} className="opening-button metal-button">
-          {copy.experience.openInvitation}
+        <button
+          autoFocus
+          disabled={isLoading || !!error}
+          onClick={onOpen}
+          className="opening-button metal-button"
+        >
+          {isLoading ? 'Đang mở lời mời…' : copy.experience.openInvitation}
           <ArrowDown size={15} aria-hidden="true" />
         </button>
+        {error && (
+          <p role="alert" className="text-sm mt-4">
+            {error}{' '}
+            <button type="button" className="underline min-h-11 px-2" onClick={onRetry}>
+              Thử lại
+            </button>
+          </p>
+        )}
         <p className="text-xs text-secondary mt-5 leading-relaxed">{copy.experience.openingNote}</p>
       </div>
     </motion.section>

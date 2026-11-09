@@ -17,7 +17,14 @@ import Toast from './components/Toast';
 import OpeningInvitation from './components/OpeningInvitation';
 import Snowfall from './components/Snowfall';
 import { localStore } from './storage';
-import { supabase, requireSupabase, loadGuests, submitGuest, checkAdmin } from './supabase';
+import {
+  supabase,
+  requireSupabase,
+  loadGuests,
+  submitGuest,
+  checkAdmin,
+  resolveInvitation,
+} from './supabase';
 
 const readThemeColor = (key: string, fallback: string) => {
   const value = localStore.getItem(key);
@@ -42,6 +49,11 @@ const normalizeGuestGroup = (group: string, relation: Guest['relation'] = 'NONE'
 export default function App() {
   const copy = WEDDING_CONFIG.copy;
   const [isOpened, setIsOpened] = useState(false);
+  const [resolvingInvitation, setResolvingInvitation] = useState(() =>
+    new URLSearchParams(window.location.search).has('i'),
+  );
+  const [invitationError, setInvitationError] = useState('');
+  const [invitationRetry, setInvitationRetry] = useState(0);
   const [activeTab, setActiveTab] = useState<ActiveTab>('INVITATION');
   const [guests, setGuests] = useState<Guest[]>([]);
   const [currentGuestName, setCurrentGuestName] = useState<string>(copy.common.guest);
@@ -163,19 +175,46 @@ export default function App() {
     }
   };
 
-  // Read personalized invitation parameters.
+  // Resolve short links before opening; legacy name/group links remain supported.
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const toParam = urlParams.get('to');
-    const groupParam = urlParams.get('group');
-
-    if (toParam) {
-      setCurrentGuestName(toParam);
+    let alive = true;
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('i');
+    if (params.has('i')) {
+      setResolvingInvitation(true);
+      setInvitationError('');
+      void resolveInvitation(code || '')
+        .then((invitation) => {
+          if (alive) {
+            setCurrentGuestName(invitation.name);
+            setCurrentGuestGroup(normalizeGuestGroup(invitation.group));
+          }
+        })
+        .catch(() => {
+          if (alive)
+            setInvitationError(
+              'Không mở được thiệp. Vui lòng kiểm tra lại đường dẫn hoặc thử lại.',
+            );
+        })
+        .finally(() => {
+          if (alive) setResolvingInvitation(false);
+        });
+    } else {
+      const [groomGroup, brideGroup] = WEDDING_CONFIG.copy.adminView.groupOptions;
+      const group =
+        params.get('g') === 'b'
+          ? brideGroup
+          : params.get('g') === 'g'
+            ? groomGroup
+            : params.get('group');
+      if (params.get('to')) setCurrentGuestName(params.get('to')!);
+      if (group) setCurrentGuestGroup(normalizeGuestGroup(group));
+      setResolvingInvitation(false);
     }
-    if (groupParam) {
-      setCurrentGuestGroup(normalizeGuestGroup(groupParam));
-    }
-  }, []);
+    return () => {
+      alive = false;
+    };
+  }, [invitationRetry]);
 
   useEffect(() => {
     if (!supabase) return;
@@ -789,6 +828,9 @@ export default function App() {
             guestName={currentGuestName}
             guestGroup={currentGuestGroup}
             onOpen={openInvitation}
+            isLoading={resolvingInvitation}
+            error={invitationError}
+            onRetry={() => setInvitationRetry((value) => value + 1)}
           />
         )}
       </AnimatePresence>

@@ -33,7 +33,7 @@ RSVP và lời chúc được lưu vào Supabase. Quản trị đăng nhập b�
 
 Sao chép `.env.example` thành `.env.local`, điền Project URL và publishable key, rồi chạy lại dev server. GitHub Actions cần hai giá trị cấu hình như hướng dẫn; workflow sẽ dừng nếu thiếu cấu hình.
 
-Màu giao diện và lượt thích vẫn lưu cục bộ. Dữ liệu mẫu/cục bộ cũ không tự được tải lên database. Mỗi phản hồi là một bản ghi riêng, không ghi đè theo tên.
+Màu giao diện lưu cục bộ. Lượt tim lời chúc lưu chung trên Supabase, tự cập nhật mỗi 15 giây khi trang đang mở. Dữ liệu mẫu/cục bộ cũ không tự được tải lên database. Mỗi phản hồi là một bản ghi riêng, không ghi đè theo tên.
 
 ## Format code tự động
 
@@ -43,3 +43,7 @@ Cài extension **Prettier - Code formatter** (`esbenp.prettier-vscode`) trong VS
 - `npm run format:check`: kiểm tra định dạng mà không thay đổi file.
 
 Thư mục build, assets, dữ liệu handoff, file môi trường và lockfile được bỏ qua qua `.prettierignore`. SQL không được Prettier mặc định hỗ trợ; cấu hình này không thêm formatter SQL.
+
+## Link thiệp ngắn
+
+Copy Link trong trang quản trị tạo mã 8 ký tự dùng cùng tên miền (`?i=...`). Database hiện có cần chạy `supabase/migrations/20261109_short_invitations.sql`; xem `SUPABASE_SETUP.md`. Link cũ vẫn được hỗ trợ. `npm run test:supabase` kiểm tra SQL lượt tim và mã thiệp bằng database cục bộ, không kết nối dữ liệu thật.

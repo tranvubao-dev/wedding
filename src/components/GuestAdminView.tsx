@@ -1,3 +1,4 @@
+import { ensureInvitationCode } from '../supabase';
 import { optimizedImage, responsiveImage } from '../imageUtils';
 /**
  * @license
@@ -44,6 +45,10 @@ export default function GuestAdminView({
 }: GuestAdminViewProps) {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
+  const [shareError, setShareError] = useState('');
+  const [shareUrl, setShareUrl] = useState('');
+  const [copyingId, setCopyingId] = useState<string | null>(null);
+  const [shortCodes, setShortCodes] = useState<Record<string, string>>({});
   const copy = WEDDING_CONFIG.copy.adminView;
   const [newGuestName, setNewGuestName] = useState('');
   const [newGuestGroup, setNewGuestGroup] = useState('');
@@ -91,21 +96,32 @@ export default function GuestAdminView({
   const responseRate = totalGuests > 0 ? Math.round((respondedCount / totalGuests) * 100) : 0;
 
   // Handle invitation link copying
-  const handleCopyLink = (guest: Guest) => {
-    const personalUrl = new URL(window.location.href);
-    personalUrl.search = '';
-    personalUrl.hash = '';
-    personalUrl.searchParams.set('to', guest.name);
-    if (guest.group) personalUrl.searchParams.set('group', guest.group);
-
-    navigator.clipboard
-      .writeText(personalUrl.toString())
-      .then(() => {
+  const handleCopyLink = async (guest: Guest) => {
+    if (copyingId) return;
+    setCopyingId(guest.id);
+    setShareError('');
+    setShareUrl('');
+    try {
+      const code = shortCodes[guest.id] || (await ensureInvitationCode(guest.id));
+      setShortCodes((current) => ({ ...current, [guest.id]: code }));
+      const url = new URL(WEDDING_CONFIG.sharing.baseUrl || window.location.href);
+      url.search = '';
+      url.hash = '';
+      url.searchParams.set('i', code);
+      setShareUrl(url.toString());
+      try {
+        await navigator.clipboard.writeText(url.toString());
         onTriggerCopyToast(guest.name);
-      })
-      .catch((err) => {
-        console.error(WEDDING_CONFIG.copy.logs.clipboardFailed, err);
-      });
+      } catch {
+        setShareError('Link đã tạo. Bạn có thể chọn và sao chép đường dẫn bên dưới.');
+      }
+    } catch {
+      setShareError(
+        'Chưa tạo được mã thiệp. Kiểm tra kết nối, quyền admin và SQL mã thiệp trên Supabase.',
+      );
+    } finally {
+      setCopyingId(null);
+    }
   };
 
   const handleCreateGuest = async (e: React.FormEvent) => {
@@ -144,6 +160,24 @@ export default function GuestAdminView({
 
   return (
     <div className="w-full">
+      {(shareError || shareUrl) && (
+        <div className="mb-6 border border-outline-variant p-4 bg-surface" aria-live="polite">
+          {shareError && <p className="text-sm mb-2">{shareError}</p>}
+          {shareUrl && (
+            <label className="block text-sm">
+              Link thiệp ngắn
+              <input
+                aria-label="Link thiệp ngắn"
+                className="block w-full mt-2 p-3 border border-outline-variant"
+                readOnly
+                value={shareUrl}
+                onFocus={(event) => event.target.select()}
+              />
+            </label>
+          )}
+        </div>
+      )}
+
       {/* Intro section */}
       <div className="mb-10 animate-fade-in-up">
         <h2 className="font-serif text-3xl md:text-4xl text-primary mb-2 font-bold select-none tracking-tight">
@@ -540,13 +574,14 @@ export default function GuestAdminView({
                           <div className="flex justify-end items-center gap-2">
                             {/* Copy personal link */}
                             <button
-                              onClick={() => handleCopyLink(guest)}
+                              onClick={() => void handleCopyLink(guest)}
+                              disabled={copyingId !== null}
                               className="p-1.5 text-primary bg-primary/5 hover:bg-primary/12 active:scale-95 rounded transition-all flex items-center gap-1"
                               title={copy.copyLinkTitle}
                             >
                               <Copy size={13} />
                               <span className="hidden sm:inline font-sans font-bold text-[9px] uppercase tracking-wider">
-                                {copy.copyLink}
+                                {copyingId === guest.id ? 'Đang tạo…' : copy.copyLink}
                               </span>
                             </button>
 

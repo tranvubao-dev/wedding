@@ -5,6 +5,11 @@
  */
 
 export const WEDDING_CONFIG = {
+  // ===== LIÊN KẾT GỬI KHÁCH =====
+  sharing: {
+    baseUrl: 'https://bidtech.id.vn/', // Địa chỉ đã deploy; không gửi link localhost
+  },
+
   // ===== HIỆU ỨNG =====
   effects: {
     snow: {
@@ -86,7 +91,7 @@ export const WEDDING_CONFIG = {
       receptionVenueName: 'Nhà Hàng Tiệc Cưới Hoàng Long 2',
       receptionAddress: 'Ngã ba cầu ông Đô, Quốc lộ 1A, Diêu Trì, Tuy Phước, Gia Lai',
       receptionAddressMap:
-        'https://www.google.com/maps/place/Nh%C3%A0+Ho%C3%A0ng+Ti%E1%BB%87c+C%C6%B0%E1%BB%9Bi+Ho%C3%A0ng+Long+Palace/@13.8187603,109.1443076,944m/data=!3m2!1e3!4b1!4m6!3m5!1s0x316f1500234927ff:0xf4533b977938e720!8m2!3d13.8187551!4d109.1468825!16s%2Fg%2F11x8ylnpmw?entry=ttu&g_ep=EgoyMDI2MTAyOC4wIKXMDSoASAFQAw%3D%3D',
+        'https://www.google.com/maps/place/Nh%C3%A0+H%C3%A0ng+Ti%E1%BB%87c+C%C6%B0%E1%BB%9Bi+Ho%C3%A0ng+Long+2/@13.8192307,109.1474105,319m/data=!3m1!1e3!4m14!1m7!3m6!1s0x316f1500234927ff:0xf4533b977938e720!2zTmjDoCBIb8OgbmcgVGnhu4djIEPGsOG7m2kgSG_DoG5nIExvbmcgUGFsYWNl!8m2!3d13.8187551!4d109.1468825!16s%2Fg%2F11x8ylnpmw!3m5!1s0x316f14f146c16449:0xcbedd71ff95cbf5b!8m2!3d13.819108!4d109.1471325!16s%2Fg%2F11b67npvsj?entry=ttu&g_ep=EgoyMDI2MTEwNC4wIKXMDSoASAFQAw%3D%3D',
       receptionImagemap:
         'https://res.cloudinary.com/dp2vpbmjg/image/upload/v1793450637/Screenshot_2026-10-31_at_19.43.43_rvvpxb.png',
       programSections: ['day2', 'reception'],
@@ -126,7 +131,7 @@ export const WEDDING_CONFIG = {
       events: [
         {
           time: '10:00',
-          title: 'Lễ Nạp Lễ & Vu Quy',
+          title: 'Lễ Ăn Hỏi',
           location: 'Tư gia nhà gái - Thôn Bình An 2, Phước Thành, Tuy Phước',
         },
         {
@@ -142,12 +147,12 @@ export const WEDDING_CONFIG = {
       events: [
         {
           time: '07:00',
-          title: 'Lễ Xin Dâu & Đón Dâu',
+          title: 'Lễ Xin Dâu',
           location: 'Tư gia nhà gái - Thôn Bình An 2, Phước Thành, Tuy Phước',
         },
         {
           time: '10:00',
-          title: 'Lễ Thành Hôn & Tiệc Mừng',
+          title: 'Lễ Thành Hôn',
           location: 'Tư gia nhà trai - 409 Lạc Long Quân, Quy Nhơn Bắc, Gia Lai',
         },
       ],
@@ -266,7 +271,7 @@ export const WEDDING_CONFIG = {
       venueLabel: 'ĐỊA ĐIỂM',
       mapButton: 'Mở Bản Đồ Đường Đi',
       loveQuote:
-        'Tình yêu không phải là nhìn nhau, mà là cùng nhìn về một hướng. Chúng tôi trân trọng kính mời bạn đến chia vui trong khoảnh khắc khởi đầu hành trình mới này.',
+        'Tình yêu không phải là nhìn nhau, mà là cùng nhìn về một hướng. Chúng tôi trân trọng kính mời bạn đến chung vui trong khoảnh khắc khởi đầu hành trình mới này.',
       wishesEyebrow: 'WISHING WALL',
       wishesTitle: 'Bức Tường Chúc Phúc',
       wishesDescription:

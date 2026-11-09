@@ -25,7 +25,7 @@ import Countdown from './Countdown';
 import { optimizedImage, responsiveImage } from '../imageUtils';
 import { Guest } from '../types';
 import { WEDDING_CONFIG } from '../config';
-import { localStore } from '../storage';
+import { useWishLikes } from '../useWishLikes';
 
 interface InvitationViewProps {
   detailsContent: React.ReactNode;
@@ -64,8 +64,9 @@ export default function InvitationView({
     guestName !== WEDDING_CONFIG.copy.common.guest ? guestName : '',
   );
   const [blessingMessage, setBlessingMessage] = useState('');
-  const [blessingLikes, setBlessingLikes] = useState<Record<string, number>>({});
-  const [userLiked, setUserLiked] = useState<Record<string, boolean>>({});
+  const likes = useWishLikes(
+    guests.filter((guest) => guest.blessing?.trim()).map((guest) => guest.id),
+  );
 
   // Sync RSVP and Blessing Name when prop guestName updates
   useEffect(() => {
@@ -73,64 +74,6 @@ export default function InvitationView({
       setBlessingName(guestName);
     }
   }, [guestName]);
-
-  // Blessing Likes tracker load/save
-  useEffect(() => {
-    const storedLikes = localStore.getItem('eternal_wedding_blessing_likes');
-    const storedUserLikes = localStore.getItem('eternal_wedding_user_likes');
-    if (storedLikes) {
-      try {
-        const parsed: unknown = JSON.parse(storedLikes);
-        if (
-          parsed &&
-          typeof parsed === 'object' &&
-          !Array.isArray(parsed) &&
-          Object.values(parsed).every(
-            (value) => typeof value === 'number' && Number.isFinite(value) && value >= 0,
-          )
-        ) {
-          setBlessingLikes(parsed as Record<string, number>);
-        }
-      } catch (e) {
-        console.error(e);
-      }
-    }
-    if (storedUserLikes) {
-      try {
-        const parsed: unknown = JSON.parse(storedUserLikes);
-        if (
-          parsed &&
-          typeof parsed === 'object' &&
-          !Array.isArray(parsed) &&
-          Object.values(parsed).every((value) => typeof value === 'boolean')
-        ) {
-          setUserLiked(parsed as Record<string, boolean>);
-        }
-      } catch (e) {
-        console.error(e);
-      }
-    }
-  }, []);
-
-  const handleLikeBlessing = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    const hasLiked = userLiked[id];
-    const newLikes = { ...blessingLikes };
-    const newUserLiked = { ...userLiked };
-
-    if (hasLiked) {
-      newLikes[id] = Math.max(0, (newLikes[id] || 1) - 1);
-      newUserLiked[id] = false;
-    } else {
-      newLikes[id] = (newLikes[id] || 0) + 1;
-      newUserLiked[id] = true;
-    }
-
-    setBlessingLikes(newLikes);
-    setUserLiked(newUserLiked);
-    localStore.setItem('eternal_wedding_blessing_likes', JSON.stringify(newLikes));
-    localStore.setItem('eternal_wedding_user_likes', JSON.stringify(newUserLiked));
-  };
 
   const handleSendBlessingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -492,6 +435,15 @@ export default function InvitationView({
         id="wedding-wishes"
         className="wedding-reveal w-full max-w-[1000px] px-6 py-16 md:py-24 text-center bg-transparent scroll-mt-16"
       >
+        {likes.error && (
+          <p role="alert" className="text-sm text-red-700 mb-4">
+            {likes.error}{' '}
+            <button type="button" className="underline min-h-11 px-2" onClick={likes.retry}>
+              Thử lại
+            </button>
+          </p>
+        )}
+
         <span className="font-sans font-bold text-[10px] text-primary tracking-[0.3em] block mb-4 uppercase">
           {copy.wishesEyebrow}
         </span>
@@ -548,27 +500,26 @@ export default function InvitationView({
 
                       {/* Interactive Love Counter */}
                       <button
-                        onClick={(e) => handleLikeBlessing(g.id, e)}
+                        type="button"
+                        disabled={likes.pending[g.id] || !likes.states[g.id]}
+                        aria-pressed={likes.states[g.id]?.liked ?? false}
+                        aria-label={likes.states[g.id]?.liked ? copy.unlike : copy.like}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          void likes.toggle(g.id);
+                        }}
                         className={`flex items-center gap-1 py-1 px-2 rounded-full border transition-all ${
-                          userLiked[g.id]
+                          likes.states[g.id]?.liked
                             ? 'bg-red-50 border-red-200 text-red-600 font-bold shadow-sm'
                             : 'bg-neutral-50 hover:bg-neutral-100 border-neutral-200 text-secondary hover:text-red-500'
                         }`}
-                        title={userLiked[g.id] ? copy.unlike : copy.like}
+                        title={likes.states[g.id]?.liked ? copy.unlike : copy.like}
                       >
-                        <Heart size={10} className={userLiked[g.id] ? 'fill-red-600' : ''} />
-                        <span>
-                          {blessingLikes[g.id] ||
-                            (g.id === 'g1'
-                              ? 12
-                              : g.id === 'g3'
-                                ? 8
-                                : g.id === 'g4'
-                                  ? 6
-                                  : g.id === 'g5'
-                                    ? 9
-                                    : 0)}
-                        </span>
+                        <Heart
+                          size={10}
+                          className={likes.states[g.id]?.liked ? 'fill-red-600' : ''}
+                        />
+                        <span>{likes.states[g.id]?.total ?? '—'}</span>
                       </button>
                     </div>
                   </motion.div>
