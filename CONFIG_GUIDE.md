@@ -126,3 +126,11 @@ Bản thiết kế hiện tại lấy cảm hứng từ giấy ivory, mực oliv
 `images.monogram` và `images.stationeryFlowers` hiện dùng bản WebP nhẹ từ logo/hoa gốc. Các SVG gốc vẫn giữ trong `public/`. Nếu thay SVG gốc, cần xuất lại WebP tương ứng hoặc đổi đường dẫn config sang file ảnh mới; không chỉ thay SVG rồi giữ đường dẫn WebP cũ.
 
 Trang ưu tiên mở thiệp trước, sau đó tải trước ảnh chân dung và ảnh album đầu khi trình duyệt rảnh. Các ảnh bản đồ/RSVP/album còn lại được tải theo vị trí cuộn. Bộ đếm được tách riêng để không render lại album mỗi giây; trang quản trị chỉ tải JavaScript khi mở. Không cần tải toàn bộ ảnh gốc để hiển thị ảnh thu nhỏ.
+
+## Hộp quà mừng cô dâu/chú rể
+
+Nút Gửi quà mừng nằm ở góc phải cuối Bức tường lời chúc; nhấn để mở nhẹ phần QR và lời cảm ơn. Đặt hai ảnh QR thật vào `public/qr-bride.png` và `public/qr-groom.png`, hoặc thay URL ở `images.qrBride`/`images.qrGroom` trong config. Dùng ảnh rõ nét, nền trắng, giữ đủ viền trắng quanh QR; không qua bộ nén Cloudinary của album.
+
+Thông tin ngân hàng tùy chọn nằm tại `gifts.bride` và `gifts.groom` (`bankName`, `accountName`, `accountNumber`); trường trống sẽ không hiển thị. Lời cảm ơn và nhãn nằm tại `copy.gifts`. Đặt `gifts.enabled: false` để ẩn toàn bộ hộp quà. Khi chưa có ảnh hoặc ảnh lỗi, khung hiển thị Mã QR đang được cập nhật, không tạo QR giả. Ảnh QR chỉ được tải khi khách mở hộp quà.
+
+Hiện hai QR mẫu `public/qr-bride-demo.svg` và `public/qr-groom-demo.svg` chỉ chứa chữ minh họa, không có tài khoản ngân hàng. Khi thay QR thật, đổi `images.qrBride`/`images.qrGroom` sang đường dẫn mới, đồng thời đặt `gifts.bride.demo`/`gifts.groom.demo` thành `false` để bỏ nhãn QR mẫu.

@@ -10,6 +10,13 @@ export const WEDDING_CONFIG = {
     baseUrl: 'https://bidtech.id.vn/', // Địa chỉ đã deploy; không gửi link localhost
   },
 
+  // ===== QUÀ MỪNG =====
+  gifts: {
+    enabled: true,
+    bride: { demo: false, bankName: 'BIDV', accountName: '', accountNumber: '' },
+    groom: { demo: false, bankName: 'TPBank', accountName: '', accountNumber: '' },
+  },
+
   // ===== HIỆU ỨNG =====
   effects: {
     snow: {
@@ -40,6 +47,8 @@ export const WEDDING_CONFIG = {
   // ===== HÌNH ẢNH =====
   // Album: content.albumImages. Ảnh bản đồ: guestSchedules.*.receptionImagemap.
   images: {
+    qrBride: './qr-nhu.svg', // Đặt ảnh QR thật của cô dâu trong public/
+    qrGroom: './qr-bao.svg', // Đặt ảnh QR thật của chú rể trong public/
     paperTexture: './ivory-paper.svg', // Vân giấy ivory nhẹ
     monogram: './wedding-monogram.webp', // Logo NB dạng nét liền
     stationeryFlowers: './dried-flower.webp', // Họa tiết hoa khô nền thiệp
@@ -193,6 +202,22 @@ export const WEDDING_CONFIG = {
 
   // ===== TOÀN BỘ NỘI DUNG HIỂN THỊ =====
   copy: {
+    gifts: {
+      button: 'Gửi quà mừng',
+      close: 'Khép lại hộp quà',
+      eyebrow: 'MỘT CHÚT YÊU THƯƠNG',
+      title: 'Hộp quà hạnh phúc',
+      thankYou:
+        'Sự hiện diện và những lời chúc của bạn đã là món quà quý giá với chúng mình. Nếu bạn muốn gửi thêm một chút yêu thương, chúng mình xin đón nhận bằng tất cả sự trân trọng. Cảm ơn bạn đã cùng vun đắp cho khởi đầu hạnh phúc của hai đứa.',
+      footer: 'Thương mến và biết ơn,',
+      bride: 'Mừng cô dâu',
+      groom: 'Mừng chú rể',
+      scan: 'Quét mã để gửi quà mừng',
+      demo: 'QR mẫu — chưa dùng chuyển khoản',
+      unavailable: 'Mã QR đang được cập nhật',
+      accountName: 'Chủ tài khoản',
+      accountNumber: 'Số tài khoản',
+    },
     experience: {
       openingEyebrow: 'MỘT LỜI MỜI TỪ TRÁI TIM',
       openInvitation: 'Mở thiệp mời',

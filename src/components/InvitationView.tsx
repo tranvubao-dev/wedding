@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { ALBUM_IMAGES } from '../data';
 import Countdown from './Countdown';
+import GiftPanel from './GiftPanel';
 import { optimizedImage, responsiveImage } from '../imageUtils';
 import { Guest } from '../types';
 import { WEDDING_CONFIG } from '../config';
@@ -584,6 +585,7 @@ export default function InvitationView({
             </form>
           </div>
         </div>
+        <GiftPanel />
       </section>
     </div>
   );
