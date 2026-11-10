@@ -300,7 +300,7 @@ export const WEDDING_CONFIG = {
       wishesEyebrow: 'WISHING WALL',
       wishesTitle: 'Bức Tường Chúc Phúc',
       wishesDescription:
-        'Nơi lưu giữ những lời chúc lãng mạn, ấm cáp nhất mà gửi gắm từ bạn bè, thân hữu dành cho cô dâu & chú rể.',
+        'Nơi lưu giữ những lời chúc lãng mạn, ấm áp, gửi gắm từ bạn bè, thân hữu dành cho cô dâu & chú rể.',
       noWishes: 'Chưa có lời chúc nào. Hãy là người đầu tiên chúc phúc cho đôi uyên ương!',
       guestFallback: 'Khách mời',
       newWish: 'Mới gửi',

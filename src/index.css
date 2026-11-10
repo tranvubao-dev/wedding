@@ -1,4 +1,8 @@
-@import 'tailwindcss';
+@import 'tailwindcss' source(none);
+
+/* Only scan application files; docs, generated assets and old builds are not UI classes. */
+@source './';
+@source '../index.html';
 
 @theme {
   --font-serif: var(--wedding-font-serif);

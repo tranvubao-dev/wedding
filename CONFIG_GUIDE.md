@@ -133,4 +133,4 @@ Nút Gửi quà mừng nằm ở góc phải cuối Bức tường lời chúc; 
 
 Thông tin ngân hàng tùy chọn nằm tại `gifts.bride` và `gifts.groom` (`bankName`, `accountName`, `accountNumber`); trường trống sẽ không hiển thị. Lời cảm ơn và nhãn nằm tại `copy.gifts`. Đặt `gifts.enabled: false` để ẩn toàn bộ hộp quà. Khi chưa có ảnh hoặc ảnh lỗi, khung hiển thị Mã QR đang được cập nhật, không tạo QR giả. Ảnh QR chỉ được tải khi khách mở hộp quà.
 
-Hiện hai QR mẫu `public/qr-bride-demo.svg` và `public/qr-groom-demo.svg` chỉ chứa chữ minh họa, không có tài khoản ngân hàng. Khi thay QR thật, đổi `images.qrBride`/`images.qrGroom` sang đường dẫn mới, đồng thời đặt `gifts.bride.demo`/`gifts.groom.demo` thành `false` để bỏ nhãn QR mẫu.
+Hai QR hiện dùng `public/qr-nhu.svg` (cô dâu) và `public/qr-bao.svg` (chú rể), khai báo tại `images.qrBride` và `images.qrGroom`. Khi thay QR, cập nhật đúng tên file và giữ `demo: false` cho QR thật. Không cần giữ lại các file QR mẫu cũ.
