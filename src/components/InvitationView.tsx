@@ -242,9 +242,13 @@ export default function InvitationView({
           </div>
 
           {/* Personalized Greeting Unit */}
-          <div className="guest-dedication">
-            <p className="guest-dedication-label">{copy.invitationTo}</p>
-            <p className="guest-dedication-name">{guestName}</p>
+          <div className="py-5 px-5 mb-5 relative overflow-hidden">
+            <p className="font-sans font-bold text-[10px] text-secondary tracking-[0.2em] mb-2 uppercase">
+              {copy.invitationTo}
+            </p>
+            <p className="font-serif text-2xl md:text-3xl font-bold text-primary tracking-tight break-words">
+              {guestName}
+            </p>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">

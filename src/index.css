@@ -238,32 +238,8 @@ button:disabled {
 .opening-paper > .font-serif.italic {
   font-size: 23px;
 }
-.guest-dedication {
-  position: relative;
-  margin: 28px auto 32px;
-  padding: 24px 16px 18px;
-  max-width: 520px;
-  text-align: center;
-}
-.guest-dedication-label {
-  font-family: var(--font-sans);
-  font-size: 10px;
-  font-weight: 500;
-  letter-spacing: 0.28em;
-  text-transform: uppercase;
-  color: var(--color-secondary);
-  margin-bottom: 12px;
-}
-.guest-dedication-name {
-  font-family: 'Noto Serif', Georgia, serif;
-  font-size: clamp(30px, 5vw, 44px);
-  font-style: italic;
-  font-weight: 700;
-  line-height: 1.5;
-  letter-spacing: -0.035em;
-  color: #70471f;
-  overflow-wrap: anywhere;
-  text-wrap: balance;
+.opening-paper > .font-serif:not(.italic) {
+  font-size: 34px;
 }
 .paper-corner {
   position: absolute;
