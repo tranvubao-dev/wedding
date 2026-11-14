@@ -37,7 +37,7 @@ export const WEDDING_CONFIG = {
   fonts: {
     // Khi đổi font Google, cập nhật cả tên font bên dưới và URL tải font.
     stylesheetUrl:
-      'https://fonts.googleapis.com/css2?family=Corinthia:wght@400;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Noto+Serif:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap',
+      'https://fonts.googleapis.com/css2?family=Corinthia:wght@400;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Noto+Serif:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,700&display=swap',
     sans: '"Noto Serif", Georgia, serif', // Nội dung theo phong cách thiệp giấy
     serif: '"Cormorant Garamond", Georgia, serif', // Tiêu đề thanh mảnh
     coupleNames: '"Corinthia", cursive', // Giữ font tên cô dâu và chú rể

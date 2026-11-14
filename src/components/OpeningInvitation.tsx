@@ -54,8 +54,10 @@ export default function OpeningInvitation({
         </h1>
         <div className="fine-rule" />
         <p className="font-serif text-xl italic text-secondary">{schedule.dateLine}</p>
-        <p className="wedding-eyebrow mt-8">{copy.invitationView.invitationTo}</p>
-        <p className="font-serif text-2xl sm:text-3xl mt-2 mb-8">{guestName}</p>
+        <div className="guest-dedication">
+          <p className="guest-dedication-label">{copy.invitationView.invitationTo}</p>
+          <p className="guest-dedication-name">{guestName}</p>
+        </div>
         <button
           autoFocus
           disabled={isLoading || !!error}
